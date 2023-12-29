@@ -7,7 +7,7 @@ import numpy as np
 #1. 데이터
 x = np.array([1,2,3])  #numpy 데이터 형식의 123 행렬
 y = np.array([1,2,3])
-# asdasd
+
 #2. 모델 구성
 model = Sequential()    #  순차적인 모델
 model.add(Dense(20, input_dim=1))   
