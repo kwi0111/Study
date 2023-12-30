@@ -28,7 +28,7 @@ model.add(Dense(1))
 
 #3. 컴파일, 훈련
 model.compile(loss='mse', optimizer='adam')
-model.fit(x, y, epochs=100, batch_size=5)       # 배치 1개씩 잘라서 사용하겠다. 터질수가 있다. 일괄처리. 1에포 당 6번 돈다. 기본 32
+model.fit(x, y, epochs=100, batch_size=5)       # 배치 단위로 잘라서 사용하겠다. 터질수가 있다. 일괄처리. 1에포 당 6번 돈다. 기본 32(2^5)
 
 #4. 평가, 예측
 loss = model.evaluate(x, y)
