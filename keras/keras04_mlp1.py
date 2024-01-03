@@ -33,9 +33,10 @@ model.fit(x,y, epochs=100, batch_size=2)
 
 #4. 평가, 예측
 loss = model.evaluate(x, y)
-results = model.predict([[10, 1.3]])    # 스칼라, 벡터 개념,, 행의 개수 의미 X 열 우선시 
+results = model.predict([[10, 1.3]])    # 스칼라, 벡터 개념 // 행의 개수 의미 X, 열 우선시 
 print("로스 : ", loss)
 print("[10, 1.3]의 예측값", results)
+
 # [실습] : 10의 소수점 2째자리
 # 로스 :  5.24365168530494e-06
 # [10, 1.3]의 예측값 [[10.000706]]

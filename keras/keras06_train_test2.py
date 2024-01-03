@@ -6,12 +6,12 @@ from keras.layers import Dense
 x = np.array([1,2,3,4,5,6,7,8,9,10])
 y = np.array([1,2,3,4,6,5,7,8,9,10])
 
-# [실습] 넘파이 리스트의 슬라이싱 7:3으로 잘라라.
+# [실습] 넘파이 리스트의 슬라이싱 7:3으로 잘라라.   [a:b:c] a 시작값, b 도착값, c 간격
 x_train = x[:7]
 y_train = y[0:7]        # 0부터 시작 // 7 도착
 
 x_test = x[7:]
-y_test = y[7:10]        # 7부터 시작 // 10 도착 
+y_test = y[7:10]        # 7부터 시작 // 10 도착
 
 print(x_train)  # [1 2 3 4 5 6 7]
 print(y_train)  # [1 2 3 4 6 5 7]
