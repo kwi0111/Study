@@ -44,9 +44,17 @@ model.fit(x_train, y_train, epochs=500, batch_size=1)
 
 #4. 평가, 예측
 loss = model.evaluate(x_test, y_test)
-results = model.predict([11])
+results = model.predict([x])
 print("로스 : ", loss)
 print("[11]의 예측값", results)
+
+
+# 그림 그리는 API 땡겨오기
+import matplotlib.pyplot as plt
+
+plt.scatter(x, y)   # 흩뿌리다. 
+plt.plot(x, results, color='red')
+plt.show()
 
 
 
