@@ -51,13 +51,13 @@ model.add(Dense(1))
 model.compile(loss="mse", optimizer='adam')
 start_time = time.time()   #현재 시간
 
-model.fit(x_train, y_train, epochs=200, batch_size=1)
+model.fit(x_train, y_train, epochs=10000, batch_size=1)
 end_time = time.time()   #끝나는 시간
 
 #4. 평가, 예측
 loss = model.evaluate(x_test, y_test)   # 평가는 항상 테스트 데이터
 y_predict = model.predict(x_test)
-results = model.predict(x)
+# results = model.predict(x)
 
 from sklearn.metrics import r2_score    #
 r2 = r2_score(y_test, y_predict)    # 실제값, 예측값
@@ -76,3 +76,8 @@ print("걸린시간 : ", round(end_time - start_time, 2),"초")     #
 
 # 로스 :  23.210712432861328
 # r2 스코어 :  0.7458697566068171
+
+# 에포 : 10000
+# 로스 :  22.44500732421875
+# r2 스코어 :  0.7542533550262869
+# 걸린시간 :  2769.34 초
