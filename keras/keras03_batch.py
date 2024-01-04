@@ -30,7 +30,7 @@ model.add(Dense(1))
 model.compile(loss='mse', optimizer='adam')
 model.fit(x, y, epochs=100, batch_size=3)       # 배치 단위로 잘라서 사용하겠다. 터질수가 있다. 일괄처리. 1에포 당 3번 돈다. 기본 32(2^5)
                                                 # x : 학습 데이터, y : 레이블 데이터, 
-                                                # fit : 훈련, epochs : 훈련량(전체 데이터 셋에 대한 반복 횟수), bitch_size : 몇 개의 샘플?
+                                                # fit : 훈련, epochs : 훈련량(전체 데이터 셋에 대한 반복 횟수), bitch_size : 몇 개의 샘플로 가중치 갱신?
 #4. 평가, 예측
 loss = model.evaluate(x, y)
 results = model.predict([7])
