@@ -6,8 +6,8 @@ from sklearn.datasets import load_diabetes
 
 #1. 데이터
 datasets = load_diabetes()
-x = datasets.data
-y = datasets.target
+x = datasets.data       # 학습해야 할 feed용 데이터
+y = datasets.target     # label 데이터, 예측해야 할 (class) 데이터
 
 print(x)
 print(y)
