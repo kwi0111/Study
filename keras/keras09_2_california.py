@@ -4,7 +4,7 @@ from keras.models import Sequential
 from keras.layers import Dense
 
 from sklearn.datasets import fetch_california_housing               # 사이킷런 : 파이썬 머신러닝 라이브러리 // sklearn에서 제공하는 데이터셋
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split                # scikit-learn 패키지 중 model_selection에서 데이터 분할
 # import warnings                                                   # 터미널 경고 무시
 # warnings.filterwarnings('ignore')
 
@@ -40,7 +40,7 @@ model.add(Dense(1))                                                             
 #3. 컴파일, 훈련 
 model.compile(loss="mse", optimizer='adam')                                     # model.compile: 학습에 필요한것을 번역 // mse : 평균 제곱 오차 // optimizer : 훈련 과정
 start_time = time.time()                                                        # 현재 시간
-model.fit(x_train, y_train, epochs=10000, batch_size=250)                       # 모델 학습
+model.fit(x_train, y_train, epochs=3000, batch_size=250)                       # 모델 학습
 end_time = time.time()                                                          # 끝나는 시간
 
 #4. 평가, 예측
@@ -62,9 +62,31 @@ print("걸린시간 : ", round(end_time - start_time, 2),"초")                 
 # r2 스코어 :  0.5946174290684143
 # 걸린시간 :  133.34 초
 
+# 로스 :  0.5958724021911621
+# r2 스코어 :  0.5531288304681714
+# 걸린시간 :  101.69 초
+
+# 트레인 테스트 : 0.9
+# 로스 :  0.5571814179420471
+# r2 스코어 :  0.5945743732150984
+# 걸린시간 :  130.09 초
+
+
+
+# mae
+# 로스 :  0.5587480068206787
+# r2 스코어 :  -1.9388967859627373
+# 걸린시간 :  102.96 초
+
+
+
+
 # 에포 10000
 # 로스 :  0.5398460030555725
 # r2 스코어 :  0.6071883105238739
 # 걸린시간 :  449.28 초
 
-
+# mae
+# 로스 :  0.5306517481803894
+# r2 스코어 :  -1.8755583818842538
+# 걸린시간 :  401.41 초
