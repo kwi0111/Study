@@ -22,7 +22,7 @@ print(test_csv.shape) # (6493, 8)
 print(test_csv.info())  
 
 
-submission_csv = pd.read_csv(path + "sampleSubmission.csv")
+submission_csv = pd.read_csv(path + "samplesubmission.csv")
 print(submission_csv)
 print(submission_csv.shape)  # (6493, 2)
 
@@ -56,7 +56,7 @@ model.add(Dense(1))                         # 여기까지 렐루 쓸지 안쓸�
 
 #3. 컴파일, 훈련
 model.compile(loss='msle', optimizer='adam')
-model.fit(x_train, y_train, epochs=540, batch_size=100)
+model.fit(x_train, y_train, epochs=540, batch_size=100, verbose=2)
 
 #4. 평가, 예측
 loss = model.evaluate(x_test, y_test)       # 모델로 예측을 수행하기 위한 함수
@@ -69,7 +69,7 @@ submission_csv['count'] = y_submit
 print(submission_csv)
 print(submission_csv.shape) # (6493, 2)
 
-submission_csv.to_csv("C:\\_data\\kaggle\\bike\\submission_0108.csv", index=False) 
+submission_csv.to_csv(path + "submission_0108.csv", index=False) 
 
 
 r2 = r2_score(y_test, y_predict)   
