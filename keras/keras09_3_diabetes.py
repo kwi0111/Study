@@ -39,8 +39,9 @@ end_time = time.time()
 #4. 평가, 예측
 loss = model.evaluate(x_test, y_test)                                           
 y_predict = model.predict(x_test)
-results = model.predict(x)
-
+# results = model.predict(x)
+print(y_predict.shape)      # (54, 1)
+# print(results.shape)        # (442, 1)
 
 from sklearn.metrics import r2_score
 r2 = r2_score(y_test, y_predict)                                               

@@ -2,6 +2,8 @@ import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense
 
+# 백터 -> 행렬
+
 #1. 데이터 
 x = np.array([[1,2,3,4,5,6,7,8,9,10],
             [1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.5, 1.4, 1.3]]       # 대괄호 -> 데이터 2개

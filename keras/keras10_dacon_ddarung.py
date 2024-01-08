@@ -4,10 +4,10 @@ import numpy as np
 import pandas as pd
 from keras.models import Sequential
 from keras.layers import Dense
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import r2_score, mean_squared_error
+from sklearn.model_selection import train_test_split, mean_squared_error
 
-#1. 데이터
+
+#1. 데이터          // 판다스, 넘파이
 path = "c:\\_data\\dacon\\ddarung\\"
 
 train_csv = pd.read_csv(path + "train.csv", index_col=0)    # 인덱스 칼럼 : 0번째 //  \, \\, /, // 다 된다.   // read_csv : csv 파일을 불러오기 위한 함수
@@ -17,7 +17,7 @@ print(test_csv)                                             # 위의 훈련 데�
 submission_csv = pd.read_csv(path + "submission.csv")       
 print(submission_csv)                                       # 서브미션 형식 그대로 제출해야함.
 
-# 3개의 파일을 메모리에 땡겨왔다.
+# 3개의 파일을 메모리에 땡겨왔다. // 판다스 1차원 백터 시리즈 2차원 행렬 데이터 프레임 // 인덱스, 헤더 포함하는데 데이터로 안봄 /// 넘파이는 연산 
 
 print(train_csv.shape)      #(1459, 10) // 원래 11개인데 위에서 첫번째 칼럼을 인덱스로 바꿈
 print(test_csv.shape)       #(715, 9)   // 원래 10개 
@@ -52,7 +52,7 @@ print(test_csv.info())
 
 
 ############ x 와 y를 분리 ################
-x = train_csv.drop(['count'], axis=1)       # 행삭제 : axis = 0 // 열삭제 : axis = 1 // train_csv에 있는 'count'열 삭제
+x = train_csv.drop(['count'], axis=1)       # 행삭제 : axis = 0 // 열삭제 : axis = 1 // train_csv에 있는 'count'열 삭제 
 print(x)
 y = train_csv['count']                      # train_csv에 있는 'count'열을 y로 설정
 print(y)
@@ -84,8 +84,7 @@ model.fit(x_train, y_train, epochs=500, batch_size=100)
 
 #4. 평가, 예측
 loss = model.evaluate(x_test, y_test)       # 모델로 예측을 수행하기 위한 함수
-y_predict = model.predict(x_test)           # x_test를 넣으면 y_test 나옴
-results = model.predict(x)                  # x를 results로 정의
+y_predict = model.predict(x_test)           # x_test를 넣으면 y_predict 나옴
 y_submit = model.predict(test_csv)
 print(y_submit)
 print(y_submit.shape)       # (715, 1)
