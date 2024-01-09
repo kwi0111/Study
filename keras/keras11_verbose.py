@@ -25,7 +25,7 @@ model.add(Dense(1))
 model.compile(loss="mse", optimizer='adam')
 model.fit(x_train,y_train, epochs=100, batch_size=1, 
           verbose=-1)
-# verbose=0 : 침묵
+# verbose=0 : 침묵 // 빠른 연산
 # verbose=1 : 디폴트
 # verbose=2 : 프로그래스바 삭제
 # verbose=3 : 결과와 프로그래스바 삭제 / 에포만 나온다.
@@ -41,5 +41,5 @@ print("로스 : ", loss)
 print("[11000]의 예측값", results)
 
 
-
+# 
 

@@ -56,7 +56,9 @@ model.add(Dense(1))                         # 여기까지 렐루 쓸지 안쓸�
 
 #3. 컴파일, 훈련
 model.compile(loss='msle', optimizer='adam')
-model.fit(x_train, y_train, epochs=540, batch_size=100, verbose=2)
+hist = model.fit(x_train, y_train, epochs=540, batch_size=100, verbose=2,
+          validation_split=0.3
+          )
 
 #4. 평가, 예측
 loss = model.evaluate(x_test, y_test)       # 모델로 예측을 수행하기 위한 함수
@@ -86,14 +88,35 @@ rmse = RMSE(y_test, y_predict)
 print("RMSE : ", rmse)
 print("MSE : ", loss)
 
+def RMSE(aaa, bbb):
+    return np.sqrt(mean_squared_error(aaa, bbb))
+rmse = RMSE(y_test, y_predict)
+print("RMSE : " , rmse)
+print("MSE : ", loss)
 
-''' 만드는 방법
-def RMSLE(y_test, y_predict):
-    return np.sqrt(mean_squared_log_error(y_test, y_predict))
-rmsle = RMSLE(y_test, y_predict)
-print("RMSLE : ", rmsle)
-'''
-# r2 스코어 :  0.24582409341831013
-# 
+print("==========================")
+print(hist)
+print("============= hist.history =============")
+print(hist.history)         # 딕셔너리 {} : 키(로스,loss), 벨류(숫자,값) 한쌍 //
+                            # 리스트 []: 두개이상
+print("============ loss ============")
+print(hist.history['loss'])
+print("=========== val_loss ==========")
+print(hist.history['val_loss'])
+print("===============================")
+
+import matplotlib.pyplot as plt
+plt.rcParams['font.family'] ='Malgun Gothic'    # 위치
+
+plt.figure(figsize=(9,6))
+plt.plot(hist.history['loss'], c='red', label='loss', marker='.')
+plt.plot(hist.history['val_loss'], c='blue', label='val_loss', marker='.')
+plt.legend(loc='upper right') # 라벨
+plt.title('캐글 바이크 LOSS') #제목
+plt.xlabel('epoch')
+plt.ylabel('loss')
+plt.grid()
+plt.show()
+
 
 
