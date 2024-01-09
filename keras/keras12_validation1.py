@@ -3,14 +3,14 @@ import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense
 
-#1. 데이터
+#1. 데이터 (분석, 정제, 전처리)
 # x = np.array([1,2,3,4,5,6,7,8,9,10])
 # y = np.array([1,2,3,4,6,5,7,8,9,10])
 
 x_train = np.array([1,2,3,4,5]) 
 y_train = np.array([1,2,3,4,6])       # 훈련에 쓴다
 
-x_val = np.array([6,7])     # 알아서 조절해야함. 많이 쓰면 데이터 아깝다.
+x_val = np.array([6,7])     # 알아서 조절해야함. 많이 쓰면 데이터 아깝다. // 성능 향상 있으면 좋고 아니면 말고
 y_val = np.array([5,7])
 
 x_test = np.array([8,9,10]) # 이것으로 평가 하겠다. / 훈련 데이터와 평가 데이터를 나눈다. / 훈련값과 평가값이 비슷하면 신뢰 O

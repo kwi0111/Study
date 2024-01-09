@@ -56,7 +56,9 @@ model.add(Dense(1))                         # 여기까지 렐루 쓸지 안쓸�
 
 #3. 컴파일, 훈련
 model.compile(loss='msle', optimizer='adam')
-model.fit(x_train, y_train, epochs=540, batch_size=100, verbose=2)
+model.fit(x_train, y_train, epochs=540, batch_size=100, verbose=2,
+          validation_split=0.3
+          )
 
 #4. 평가, 예측
 loss = model.evaluate(x_test, y_test)       # 모델로 예측을 수행하기 위한 함수
@@ -87,13 +89,5 @@ print("RMSE : ", rmse)
 print("MSE : ", loss)
 
 
-''' 만드는 방법
-def RMSLE(y_test, y_predict):
-    return np.sqrt(mean_squared_log_error(y_test, y_predict))
-rmsle = RMSLE(y_test, y_predict)
-print("RMSLE : ", rmsle)
-'''
-# r2 스코어 :  0.24582409341831013
-# 
 
 
