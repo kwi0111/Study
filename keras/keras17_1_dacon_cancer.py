@@ -39,9 +39,9 @@ x = train_csv.drop(['Outcome', 'Insulin'], axis=1)   # 행삭제 : axis = 0 // �
 print(x)
 y = train_csv.drop(['Insulin'], axis=1)       # 행삭제 : axis = 0 // 열삭제 : axis = 1 // train_csv에 있는 'Outcome'열 삭제 
 y = train_csv['Outcome']                      # train_csv에 있는 'Outcome'열을 y로 설정
+test_csv = test_csv.drop(['Insulin'], axis=1)
 print(y)
 
-test_csv = test_csv.drop(['Insulin'], axis=1)
 
 x_train, x_test, y_train, y_test = train_test_split(
     x, y, shuffle=True, train_size=0.9, random_state=123123,
@@ -74,7 +74,7 @@ print(pd.value_counts(y))       # 행렬 데이터 일때 // mse로는 0과 1을
 
 #2. 모델 구성
 model = Sequential()
-model.add(Dense(20, input_dim = 7))        # sigmoid : 모든값 0~1로 한정 // 회귀 모델은 보통 리니어 // 2진분류는 시그모이드에 바이너리 크로스엔트로피
+model.add(Dense(20, input_dim = 7)) 
 model.add(Dense(80))
 model.add(Dense(150))
 model.add(Dense(850))
@@ -84,27 +84,25 @@ model.add(Dense(20))
 model.add(Dense(1, activation='sigmoid')) # sigmoid 최종 레이어에 판단, 중간 레이어에 다 쓸수는 있음 // 렐루는 마지막에 잘안씀 0.5이상은 1, 0.5미만은 0으로 판단
 
 #.3 컴파일 훈련 // 하나 포기하는게 과적합 안걸림 // 
-model.compile(loss='binary_crossentropy', optimizer='adam',      # loss='binary_crossentropy' -> 이진 분류때 씀 (sigmoid)// 공식중 두개가 공존하지 않음 // 실제값과 예측값의 차이
+model.compile(loss='binary_crossentropy', optimizer='adam',      # 이진 분류 'binary_crossentropy', 'sigmoid'// 공식중 두개가 공존하지 않음 // 실제값과 예측값의 차이
               metrics=['accuracy']                 # 0인지 1인지를 맞추는 정확성 // acc = accuracy // 'mse', 'mae' 도 넣을수 있음 
               )    
-                # 둘중 하나는 무조건 'binary_crossentropy
 es = EarlyStopping(monitor = 'val_loss',
                    mode='auto',
-                   patience=150,
+                   patience=15,
                    verbose=1
                    )
-hist = model.fit(x_train, y_train, epochs=1000, batch_size=13, 
+hist = model.fit(x_train, y_train, epochs=100, batch_size=13, 
           validation_split=0.3, 
           callbacks=[es]        
           )
 
-
 #4. 평가, 예측
 loss = model.evaluate(x_test, y_test)
-y_submit = model.predict(test_csv)
 y_predict = model.predict(x_test)
-y_predict = y_predict.round()   # acc에 필요함
-y_submit = y_submit.round()     # submit으로 제출해야하기 때문에,,
+y_predict = np.round(y_predict)   # acc에 필요함
+y_submit = model.predict(test_csv)
+y_submit = np.round(y_submit)     # submit으로 제출해야하기 때문에,,
 
 
 from sklearn.metrics import r2_score, mean_squared_error, accuracy_score
@@ -113,11 +111,13 @@ print(y_test)
 print(y_predict)        # 시그모이드 때문에 정수값이 아니다.
 
 
+
+
+# ACC :  0.8333333333333334
 def ACC(aaa, bbb):
-    return np.sqrt(accuracy_score(aaa, bbb))
+    return accuracy_score(y_test, y_predict)
 acc = ACC(y_test, y_predict)
 
-print("ACC : " , acc)
 
 ######### submission.csv 만들기 (count칼럼에 값만 넣어주면 됨) #############
 submission_csv['Outcome'] = y_submit
@@ -126,42 +126,14 @@ print(submission_csv.shape)     # (116, 3)
 
 submission_csv.to_csv(path + "submission_0110.csv", index=False) 
 
-print("==========================")
-print(hist)
-print("============= hist.history =============")
-print(hist.history)         
-print("============ loss ============")
-print(hist.history['loss'])
-print("=========== val_loss ==========")
-print(hist.history['val_loss'])
-print("============= accuracy =============")
-print(hist.history['accuracy'])
-print("==========================")
-
-
-import matplotlib.pyplot as plt
-plt.rcParams['font.family'] ='Malgun Gothic'    # 위치
-plt.figure(figsize=(10,8))
-plt.plot(hist.history['loss'], c='red', label='loss', marker='.')
-plt.plot(hist.history['val_loss'], c='blue', label='val_loss', marker='.')
-plt.plot(hist.history['accuracy'], c='yellow', label='accuracy', marker='.')
-plt.legend(loc='upper right') # 라벨
-plt.title('캔서 LOSS') #제목
-plt.xlabel('epoch')
-plt.ylabel('loss')
-plt.grid()
-plt.show()
-
-print("ACC : " , acc)
+print("정확도 : " , acc)
 print("로스, 정확도 : ", loss)
-# print("r2 스코어 : " , r2)  # r2 조금 못미더움 // 정확도는 predict에 대한 결과 // 여기서는 필요없다.
 '''
+# print("r2 스코어 : " , r2)  # r2 조금 못미더움 // 정확도는 predict에 대한 결과 // 여기서는 필요없다.
 ACC :  0.8876253645985945
 로스, 정확도 :  [0.4321504831314087, 0.7878788113594055]
 무조건 val이 낫다.
-def ACC(aaa, bbb):
-    return accuracy_score(y_test, round(y_submit))
-acc = ACC(y_test, y_predict)
+
 
 ACC :  0.9128709291752769
 로스, 정확도 :  [0.4189327359199524, 0.8333333134651184]

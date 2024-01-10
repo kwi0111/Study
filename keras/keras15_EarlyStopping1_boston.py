@@ -3,8 +3,6 @@ import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense
 from sklearn.model_selection import train_test_split
-import warnings
-warnings.filterwarnings('ignore')
 import time
 import numpy as np
 
@@ -64,14 +62,12 @@ hist = model.fit(x_train, y_train, epochs=200, batch_size=1,       # 모델.핏�
           validation_split=0.2, # train_size=0.7에서 0.2
           callbacks=[es]        # 리스트니까 여러개 더있다. 몇 에포가 좋은지 모름
           )
- 
 
 end_time = time.time()   #끝나는 시간
 
 #4. 평가, 예측
 loss = model.evaluate(x_test, y_test)   # 평가는 항상 테스트 데이터
 y_predict = model.predict(x_test)
-results = model.predict(x)
 
 from sklearn.metrics import r2_score, mean_squared_error
 r2 = r2_score(y_test, y_predict)    # 실제값, 예측값
@@ -83,8 +79,8 @@ def RMSE(aaa, bbb):
 rmse = RMSE(y_test, y_predict)
 print("RMSE : " , rmse)
 print("MSE : ", loss)
-
 print("걸린시간 : ", round(end_time - start_time, 2),"초")
+
 
 print("==========================")
 print(hist)
@@ -109,11 +105,6 @@ plt.ylabel('loss')
 plt.grid()
 plt.show()
 
-
-
-
-
-# 오늘 과제 : 리스트, 닥셔너리, 튜플 공부
 
 
 

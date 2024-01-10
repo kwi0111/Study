@@ -39,7 +39,7 @@ print(y)
 
 x_train, x_test, y_train, y_test = train_test_split(x,
                                                     y,
-                                                    train_size=0.7,
+                                                    train_size=0.9,
                                                     random_state=123,
                                                     shuffle=True
                                                     )
@@ -52,7 +52,7 @@ model.add(Dense(20, input_dim=8, activation='relu'))
 model.add(Dense(40, activation='relu'))
 model.add(Dense(100, activation='relu'))
 model.add(Dense(20, activation='relu'))     # 활성화 함수 'Relu' : 0이하는 0 / 0이상은 그 값  // 음수나 튀는 데이터 렐루로 감싼다. //
-model.add(Dense(1))                         # 여기까지 렐루 쓸지 안쓸지 생각 // 안써있으면 디폴트 linear(선형)
+model.add(Dense(1, activation='relu'))                         # 여기까지 렐루 쓸지 안쓸지 생각 // 안써있으면 디폴트 linear(선형)
 
 #3. 컴파일, 훈련
 model.compile(loss='msle', optimizer='adam')
@@ -63,7 +63,7 @@ es = EarlyStopping(monitor='val_loss',
                    verbose=1,
                    restore_best_weights=True
                    )
-hist = model.fit(x_train, y_train, epochs=1040, batch_size=60, verbose=2,
+hist = model.fit(x_train, y_train, epochs=1040, batch_size=30, verbose=2,
           validation_split=0.3,
           callbacks=[es]
           )
@@ -88,35 +88,10 @@ r2 = r2_score(y_test, y_predict)            # (테스트 데이터, 예측 데�
 # print(submission_csv[submission_csv['count']>0])
 print("음수 갯수 : ", submission_csv[submission_csv['count']<0].count()) ## 암기 // 데이터 프레임의 조건 
 
-y_predict = model.predict(x_test)   # 성능에 영향 x
 def RMSE(y_test, y_predict):
     return np.sqrt(mean_squared_error(y_test, y_predict))
 rmse = RMSE(y_test, y_predict)
 print("RMSE : ", rmse)
-
-print("==========================")
-print(hist)
-print("============= hist.history =============")
-print(hist.history)         
-print("============ loss ============")
-print(hist.history['loss'])
-print("=========== val_loss ==========")
-print(hist.history['val_loss'])
-print("===============================")
-
-import matplotlib.pyplot as plt
-plt.rcParams['font.family'] ='Malgun Gothic'    # 위치
-
-plt.figure(figsize=(9,6))
-plt.plot(hist.history['loss'], c='red', label='loss', marker='.')
-plt.plot(hist.history['val_loss'], c='blue', label='val_loss', marker='.')
-plt.legend(loc='upper right')   # 라벨
-plt.title('캐글 바이크 LOSS')   #제목
-plt.xlabel('epoch')
-plt.ylabel('loss')
-plt.grid()
-plt.show()
-
 print("r2 스코어 : " , r2)
 print("MSE : ", loss)
 
