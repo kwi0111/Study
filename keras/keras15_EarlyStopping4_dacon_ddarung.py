@@ -54,7 +54,7 @@ y = train_csv['count']                      # train_csv에 있는 'count'열을 
 print(y)
 
 x_train, x_test, y_train, y_test = train_test_split(
-    x, y, shuffle=True, train_size=0.90, random_state=123123,
+    x, y, shuffle=True, train_size=0.9, random_state=123123,
 )
 print(x_train.shape, x_test.shape)      # (1195, 9) (133, 9)
 print(y_train.shape, y_test.shape)      # (1195,) (133,)        train_size 달라지면 바뀜
@@ -65,10 +65,10 @@ print(y_train.shape, y_test.shape)      # (1195,) (133,)        train_size 달�
 model = Sequential()
 model.add(Dense(20, input_dim=9))
 model.add(Dense(30))
-model.add(Dense(100))
-model.add(Dense(300))
-model.add(Dense(170))
-model.add(Dense(80))
+model.add(Dense(200))
+model.add(Dense(500))
+model.add(Dense(270))
+model.add(Dense(180))
 model.add(Dense(30))
 model.add(Dense(1))
 
@@ -76,17 +76,20 @@ model.add(Dense(1))
 #3. 컴파일, 훈련
 model.compile(loss='mse', optimizer='adam')
 from keras.callbacks import EarlyStopping
-es = EarlyStopping(monitor='loss',      # EarlyStopping의 기준이 되는 값
+es = EarlyStopping(monitor='val_loss',      # EarlyStopping의 기준이 되는 값
                    mode='min',          # auto, min, max
-                   patience=80,
-                   verbose=1
+                   patience=200,
+                   verbose=1,
+                   restore_best_weights=True        # 최고의 저장 가중치를 불러와라. // 디폴트 : False // 트레인에서 실행 // 테스트에서는 안쓰임
                    )
 
-hist = model.fit(x_train, y_train, epochs=2700, batch_size=17,
-          validation_split=0.28,
+hist = model.fit(x_train, y_train, epochs=2700, batch_size=10,
+          validation_split=0.3,
           callbacks=[es]        # 콜백 함수 // 친구들도 더 있다..
           )
 # Tensorflow Keras의 EarlyStopping 콜백 함수를 활용하면 model의 성능 지표(acc, loss등)가 설정한 epoch동안 개선되지 않을 때 조기 종료할 수 있다. 
+# Validation dataset은 모델의 학습 과정에 참조되어 과대적합이 발생했는지를 판별
+# dataset = training / validation / test
 
 
 #4. 평가, 예측
@@ -104,11 +107,10 @@ print(submission_csv)
 print(submission_csv.shape) # (715, 2) // id, count
 
 
-submission_csv.to_csv(path + "submission_0109.csv", index=False)        #  to_csv 혹은 to_excel 함수를 사용할 때 'index=False' 추가
+submission_csv.to_csv(path + "submission_0110.csv", index=False)        #  to_csv 혹은 to_excel 함수를 사용할 때 'index=False' 추가
 
 
 r2 = r2_score(y_test, y_predict)        # 회귀 모델의 성능에 대한 평가지표 0 < r2 < 1
-print("r2 스코어 : " , r2)
                               
 def RMSE(aaa, bbb):
     return np.sqrt(mean_squared_error(aaa, bbb))
@@ -120,7 +122,6 @@ print("==========================")
 print(hist)
 print("============= hist.history =============")
 print(hist.history)        
-'''
 # 딕셔너리 {} : 키(로스,loss), 벨류(숫자,값) 한쌍 //
 # 리스트 []: 두개이상
 print("============ loss ============")
@@ -130,10 +131,10 @@ print(hist.history['val_loss'])
 print("===============================")
 
 import matplotlib.pyplot as plt
-plt.rcParams['font.family'] ='Malgun Gothic'    # 위치
+plt.rcParams['font.family'] ='Malgun Gothic'    # 위치에 따라 적용 안됨 // rcParams : 차트 그림의 기본 설정 지정
 
 plt.figure(figsize=(9,6))
-plt.plot(hist.history['loss'], c='red', label='loss', marker='.')
+plt.plot(hist.history['loss'], c='red', label='loss', marker='x')
 plt.plot(hist.history['val_loss'], c='blue', label='val_loss', marker='.')
 plt.legend(loc='upper right') # 라벨
 plt.title('따릉이 LOSS') #제목
@@ -143,6 +144,12 @@ plt.grid()
 plt.show()
 
 print("로스 : ", loss)
+print("r2 스코어 : " , r2)
+
+'''
+
+
+
 
 # 로스 :  2220.201171875
 # r2 스코어 :  0.7052109238071458
