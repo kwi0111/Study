@@ -66,4 +66,3 @@ print("MSE : ", loss)
 
 print("로스 : ", loss)
 print("r2 스코어 : " , r2)
-print("걸린시간 : ", round(end_time - start_time, 2),"초")
