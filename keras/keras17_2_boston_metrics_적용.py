@@ -44,11 +44,12 @@ es = EarlyStopping(monitor='val_loss',
                    mode='min',      # min, max, auto
                    patience=10,
                    verbose=1,
+                   restore_best_weights=True      
                    )
 
 hist = model.fit(x_train, y_train, epochs=200, batch_size=1, 
           validation_split=0.2, 
-          callbacks=[es]        
+          callbacks=[es]
           )
 
 #4. 평가, 예측

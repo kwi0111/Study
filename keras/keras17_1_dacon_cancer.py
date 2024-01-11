@@ -46,10 +46,11 @@ print(y)
 x_train, x_test, y_train, y_test = train_test_split(
     x, y, shuffle=True, train_size=0.9, random_state=123123,
 )
-print(x_train.shape, x_test.shape)      # (586, 8) (66, 8)
+print(x_train.shape, x_test.shape)      # (586, 7) (66, 7)   아웃컴, 인슐린 두개뺌
 print(y_train.shape, y_test.shape)      # (586,) (66,)       train_size 달라지면 바뀜
 
-print(x.shape, y.shape)     # (652, 8) (652,)
+print(x.shape, y.shape)     # (652, 7) (652,)
+
 
 
 print(np.unique(y, return_counts=True))  # (array([0, 1], dtype=int64), array([424, 228], dtype=int64)), 라벨의 종류 별로 찾아줌 // 0과 1로 나눠져있다. // 0이 무엇인지 1이 무엇인지
@@ -90,11 +91,12 @@ model.compile(loss='binary_crossentropy', optimizer='adam',      # 이진 분류
 es = EarlyStopping(monitor = 'val_loss',
                    mode='auto',
                    patience=15,
-                   verbose=1
+                   verbose=1,
+                   restore_best_weights=True 
                    )
 hist = model.fit(x_train, y_train, epochs=100, batch_size=13, 
           validation_split=0.3, 
-          callbacks=[es]        
+          callbacks=[es],    
           )
 
 #4. 평가, 예측
@@ -124,21 +126,19 @@ submission_csv['Outcome'] = y_submit
 print(submission_csv)
 print(submission_csv.shape)     # (116, 3)
 
-submission_csv.to_csv(path + "submission_0110.csv", index=False) 
+submission_csv.to_csv(path + "submission_0111.csv", index=False) 
 
 print("정확도 : " , acc)
 print("로스, 정확도 : ", loss)
-'''
 # print("r2 스코어 : " , r2)  # r2 조금 못미더움 // 정확도는 predict에 대한 결과 // 여기서는 필요없다.
-ACC :  0.8876253645985945
-로스, 정확도 :  [0.4321504831314087, 0.7878788113594055]
-무조건 val이 낫다.
+# ACC :  0.8876253645985945
+# 로스, 정확도 :  [0.4321504831314087, 0.7878788113594055]
+# 무조건 val이 낫다.
 
 
-ACC :  0.9128709291752769
-로스, 정확도 :  [0.4189327359199524, 0.8333333134651184]
-ACC :  0.9211323729436766
-로스, 정확도 :  [0.4169829487800598, 0.8484848737716675]
+# ACC :  0.9128709291752769
+# 로스, 정확도 :  [0.4189327359199524, 0.8333333134651184]
+# ACC :  0.9211323729436766
+# 로스, 정확도 :  [0.4169829487800598, 0.8484848737716675]
 
 
-'''

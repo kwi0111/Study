@@ -38,7 +38,8 @@ from keras.callbacks import EarlyStopping
 es = EarlyStopping(monitor='val_loss',
                    mode='min',
                    patience=60,
-                   verbose=1
+                   verbose=1,
+                   restore_best_weights=True
                    )
 
 start_time = time.time()

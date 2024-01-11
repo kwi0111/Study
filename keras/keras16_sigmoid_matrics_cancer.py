@@ -63,7 +63,8 @@ model.compile(loss='binary_crossentropy',  # loss='binary_crossentropy' -> Ïù¥Ïß
 es = EarlyStopping(monitor = 'val_loss',
                    mode='min',
                    patience=50,
-                   verbose=1
+                   verbose=1,
+                   restore_best_weights=True
                    )
 
 hist = model.fit(x_train, y_train, epochs=800, batch_size=12, 

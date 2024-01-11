@@ -41,13 +41,14 @@ model.compile(loss="mse", optimizer='adam')                                     
 es = EarlyStopping(monitor='val_loss',
                    mode='min',
                    patience=50,
-                   verbose=1
+                   verbose=1,
+                   restore_best_weights=True
                    )
 
 hist = model.fit(x_train, y_train, epochs=1000, batch_size=100, 
           validation_split=0.3,
           verbose=1,
-          callbacks=[es]
+          callbacks=[es],
           )                       # 모델 학습
 
 #4. 평가, 예측
