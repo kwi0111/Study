@@ -26,7 +26,7 @@ print(pd.value_counts(y))
 print(y.shape)  # (581012,)
 
 #1. 원핫엔코딩 keras
-# from keras.utils import to_categorical
+# from keras.utils import to_categorical    # 라벨값을 슬라이싱해서 0을 잘라내거나 밀어내거나 7을 0으로 바꾸거나
 # y_ohe = to_categorical(y)
 # print(y_ohe)
 # print(y_ohe.shape)  #   (581012, 8)
@@ -46,7 +46,7 @@ print(y.shape)  # (581012, 7)
 
 x_train, x_test, y_train, y_test = train_test_split(x,
                                                     y,
-                                                    train_size=0.8,
+                                                    train_size=0.9,
                                                     random_state=123,
                                                     stratify=y,
                                                     shuffle=True
@@ -73,14 +73,14 @@ model.compile(loss='categorical_crossentropy',
 
 es = EarlyStopping(monitor='val_loss',
                    mode='auto',
-                   patience=40,
+                   patience=80,
                    verbose=1,
                    restore_best_weights=True
                    )
 hist = model.fit(x_train,
                  y_train,
                  epochs=2000,
-                 batch_size=600,
+                 batch_size=300,
                  validation_split=0.3,
                  callbacks=[es]
                  )

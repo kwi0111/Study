@@ -9,7 +9,7 @@ from keras.callbacks import EarlyStopping
 #1. 데이터 
 
 #1. 데이터 // 판다스, 넘파이 
-path = "C:\\_data\\kaggle\\cancer\\"
+path = "C:\\_data\\dacon\\diabetes\\"
 
 train_csv = pd.read_csv(path + "train.csv", index_col=0)    
 print(train_csv)                                            # 여기 train_csv에서 훈련/테스트 데이터 나눠야함.
