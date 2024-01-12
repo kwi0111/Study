@@ -1,3 +1,6 @@
+# https://dacon.io/competitions/open/236070/overview/description
+
+
 import numpy as np
 import pandas as pd
 from keras.models import Sequential
@@ -43,18 +46,16 @@ print(y_ohe.shape)  # (120, 3)
 x_train, x_test, y_train, y_test = train_test_split(
         x, y_ohe,             
         train_size=0.7,
-        random_state=123,     
+        random_state=200,     
         stratify=y,     # 에러 : 분류에서만 쓴다. // y값이 정수로 딱 떨어지는것만 쓴다.
         shuffle=True,
         )
-
+print()
 #2. 모델 구성 
 model = Sequential()
-model.add(Dense(10, input_dim=4))
-model.add(Dense(20))
-model.add(Dense(100))
-model.add(Dense(40))
-model.add(Dense(10))
+model.add(Dense(64, input_dim=4))
+model.add(Dense(32))
+model.add(Dense(16))
 model.add(Dense(3, activation='softmax'))
 
     
@@ -62,12 +63,12 @@ model.add(Dense(3, activation='softmax'))
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 es = EarlyStopping(monitor='val_loss',
                    mode='min',
-                   patience=20,
+                   patience=1500, 
                    verbose=1,
                    restore_best_weights=True
                    )
 
-hist = model.fit(x_train, y_train, epochs=300, batch_size=1,
+hist = model.fit(x_train, y_train, epochs=100000, batch_size=10,
                  validation_split=0.2,
                  callbacks=[es]
                  )
@@ -90,6 +91,5 @@ submission_csv['species'] = y_submit
 submission_csv.to_csv(path + "submission_0112.csv", index=False) 
 print("로스 : ", results[0])  
 print("acc : ", results[1])  
-
 
 

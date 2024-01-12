@@ -98,6 +98,7 @@ while True:
         
         submission_csv.to_csv(path + "submission_0112_3.csv", index=False)
         break
+    
         
     
 #.3 컴파일, 훈련
