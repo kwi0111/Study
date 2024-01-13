@@ -86,7 +86,6 @@ es = EarlyStopping(monitor='val_loss',      # EarlyStopping의 기준이 되는 
 hist = model.fit(x_train, y_train, epochs=2700, batch_size=10,
           validation_split=0.3,
           callbacks=[es],        # 콜백 함수 // 친구들도 더 있다..
-          restore_best_weights=True
           )
 # Tensorflow Keras의 EarlyStopping 콜백 함수를 활용하면 model의 성능 지표(acc, loss등)가 설정한 epoch동안 개선되지 않을 때 조기 종료할 수 있다. 
 # Validation dataset은 모델의 학습 과정에 참조되어 과대적합이 발생했는지를 판별
