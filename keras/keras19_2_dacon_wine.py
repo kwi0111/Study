@@ -54,13 +54,12 @@ y_ohe = pd.get_dummies(y, dtype='int')
 print(y_ohe)
 print(y_ohe.shape)  # (5497, 7)
 print(test_csv)
-'''
 # r = random.randrange(1, 777)
 x_train, x_test, y_train, y_test = train_test_split(
 x, y_ohe,             
 train_size=0.7,
 random_state=123,
-stratify=y,  
+stratify=y_ohe,  
 shuffle=True,
 )
 
@@ -78,20 +77,22 @@ model.add(Dense(7, activation='softmax'))
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 es = EarlyStopping(monitor='val_loss',
                 mode='min',
-                patience=1000,
+                patience=50,
                 verbose=1,
                 restore_best_weights=True
                 )
 
-hist = model.fit(x_train, y_train, epochs=10000, batch_size=30,
-                validation_split=0.2,
-                callbacks=[es]
-                )
+model.fit(x_train, y_train, epochs=1000, batch_size=60,
+        validation_split=0.2,
+        callbacks=[es]
+        )
 
 #4.평가, 예측
 results = model.evaluate(x_test, y_test)
-y_predict = model.predict(test_csv)
-y_submit = np.argmax(y_predict, axis=1)      
+y_predict = model.predict(x_test)
+print(y_predict)
+y_submit = np.argmax(model.predict(test_csv), axis=1)      
+print(y_submit)
 submission_csv['quality'] = y_submit
 
 print("로스 : ", results[0])  
@@ -99,6 +100,7 @@ print("acc : ", results[1])
 
 
 submission_csv.to_csv(path + "submission_0112.csv", index=False)
+'''
 '''
 # 로스 :  1.0740183591842651
 # acc :  0.5515151619911194

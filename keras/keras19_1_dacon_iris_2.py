@@ -68,21 +68,21 @@ es = EarlyStopping(monitor='val_loss',
                    restore_best_weights=True
                    )
 
-hist = model.fit(x_train, y_train, epochs=100000, batch_size=10,
+hist = model.fit(x_train, y_train, epochs=10000, batch_size=10,
                  validation_split=0.2,
                  callbacks=[es]
                  )
 
 #4. 평가, 예측
 results = model.evaluate(x_test, y_test)
-y_predict = model.predict(test_csv)
+y_predict = model.predict(x_test)
 # print(y_predict)
 # y_submit = np.argmax(y_predict, axis=1)
 # print(y_submit)
 print(y_predict)
 # print(y_test)
 # y_test = np.argmax(y_test, axis=1)
-y_submit = np.argmax(y_predict, axis=1)
+y_submit = np.argmax(model.predict(test_csv), axis=1)
 # # # print(y_test)
 print(y_submit)
 

@@ -80,7 +80,7 @@ def aaa() :
                    restore_best_weights=True
                    )
 
-    hist = model.fit(x_train, y_train, epochs=2000, batch_size=1,
+    hist = model.fit(x_train, y_train, epochs=20000, batch_size=1,
                  validation_split=0.2,
                  callbacks=[es]
                  )

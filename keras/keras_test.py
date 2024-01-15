@@ -53,6 +53,16 @@ submission_csv['y'] = submit
 
 submitssion_csv.to_csv =(path + 'submission.csv' index = false)
 
+#4.
+results = model.evaluate(x_test, y_test)
+y_predict = model.predict(x_test)
+
+submission_csv['quality'] = model.predict(test_csv)
+
+
+submission_csv.to_csv(path + "submission0115.csv", index=False)
+
+
 
 
 
