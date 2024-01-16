@@ -38,14 +38,15 @@ print('=========원핫3=============')
 # 원핫3. 사이킷런
 from sklearn.preprocessing import OneHotEncoder # 임포트 -> 정의 -> 핏 -> 트렌스폼
 # y_ohe3 = y.reshape(-3,1)    # (150, 1)
-y = y.reshape(-1,1) # 백터를 행렬로 바꾼거
+# y = y.reshape(-1,1) # 백터를 행렬로 바꾼거
 # y_ohe3 = y.reshape(150,1)   # (150, 1)
 # y = y.reshape(50, 3)
 # print(y.shape)
 # print(y_ohe3)
 # print(y_ohe3.shape)         # (150, 1)
-print(y.shape)
+# print(y.shape)
 # ohe = OneHotEncoder(sparse=False)   # 디폴트 : true
+
 ohe = OneHotEncoder(sparse=True)
 
 # ohe.fit(y)    # 훈련

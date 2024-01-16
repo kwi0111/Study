@@ -82,7 +82,7 @@ y_predict = model.predict(x_test)
 print(y_predict)
 # print(y_test)
 # y_test = np.argmax(y_test, axis=1)
-y_submit = np.argmax(model.predict(test_csv), axis=1)
+y_submit = np.argmax(test_csv, axis=1)
 # # # print(y_test)
 print(y_submit)
 

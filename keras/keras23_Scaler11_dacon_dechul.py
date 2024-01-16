@@ -92,6 +92,20 @@ x_train, x_test, y_train, y_test = train_test_split(
                                                     stratify=y,
                                                     shuffle=True,
                                                     )
+from sklearn.preprocessing import MinMaxScaler, MaxAbsScaler
+from sklearn.preprocessing import StandardScaler, RobustScaler  # StandardScaler 표준편차 (편차 쏠릴때 사용) // 
+# scaler = MinMaxScaler() # 클래스 정의
+# scaler = StandardScaler() # 클래스 정의
+# scaler = MaxAbsScaler() # 클래스 정의
+scaler = RobustScaler() # 클래스 정의
+
+
+scaler.fit(x_train)
+x_train = scaler.transform(x_train)
+x_test = scaler.transform(x_test)
+test_csv = scaler.transform(test_csv)
+
+
 
 #2. 모델 구성 
 
@@ -113,7 +127,7 @@ es = EarlyStopping(monitor='val_loss',
                 restore_best_weights=True
                 )
 
-model.fit(x_train, y_train, epochs=10, batch_size = 1000,
+model.fit(x_train, y_train, epochs=10000, batch_size = 2000,
                 validation_split=0.25,
                 callbacks=[es],
                 verbose=1
@@ -144,3 +158,21 @@ submission_csv.to_csv(path + "submission_0115.csv", index=False)
 '''
 
 '''
+# 그냥
+# 로스 :  1.262561321258545
+
+# MinMaxScaler
+# 로스 :  1.2389674186706543
+
+# StandardScaler
+# 로스 :  1.2393440008163452
+
+# MaxAbsScaler
+# 로스 :  1.239452600479126
+
+# RobustScaler
+# 로스 :  1.2408760786056519
+
+
+
+
