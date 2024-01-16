@@ -5,7 +5,7 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
 from keras.models import Sequential
 from keras.layers import Dense
-from keras.callbacks import EarlyStopping
+from keras.callbacks import EarlyStopping, ModelCheckpoint
 from sklearn.metrics import accuracy_score
 
 datasets = fetch_covtype()
@@ -54,15 +54,15 @@ x_train, x_test, y_train, y_test = train_test_split(x,
 # Label Set인 Y가 25%의 0과 75%의 1로 이루어진 Binary Set일 때, stratify=Y로 설정하면 나누어진 데이터셋들도 0과 1을 각각 25%, 75%로 유지한 채 분할된다.
 from sklearn.preprocessing import MinMaxScaler, MaxAbsScaler
 from sklearn.preprocessing import StandardScaler, RobustScaler  # StandardScaler 표준편차 (편차 쏠릴때 사용) // 
-# scaler = MinMaxScaler() # 클래스 정의
+scaler = MinMaxScaler() # 클래스 정의
 # scaler = StandardScaler() # 클래스 정의
 # # scaler = MaxAbsScaler() # 클래스 정의
 # # scaler = RobustScaler() # 클래스 정의
 
 
-# scaler.fit(x_train)
-# x_train = scaler.transform(x_train)
-# x_test = scaler.transform(x_test)
+scaler.fit(x_train)
+x_train = scaler.transform(x_train)
+x_test = scaler.transform(x_test)
 
 
 
@@ -91,12 +91,18 @@ es = EarlyStopping(monitor='val_loss',
                    verbose=1,
                    restore_best_weights=True
                    )
+mcp = ModelCheckpoint(monitor='val_loss',
+                      mode='auto',
+                      verbose=1,
+                      save_best_only=True,
+                      filepath='../_data/_save/MCP/keras26_fetch_covtype_MCP1.hdf5'
+                      )
 hist = model.fit(x_train,
                  y_train,
                  epochs=10000,
                  batch_size=2000,
                  validation_split=0.2,
-                 callbacks=[es]
+                 callbacks=[es, mcp]
                  )
 
 #4. 평가, 예측
@@ -116,20 +122,3 @@ acc = accuracy_score(y_test, y_predict)
 print("로스 : ", results[0])
 print("acc : ", results[1])
 print("accuracy_score : ", acc)
-
-# accuracy_score :  0.7971825168024922
-
-# 그냥
-# 로스 : 0.6306923627853394
-
-# MinMaxScaler
-# 로스 :  0.6288957595825195
-
-# StandardScaler
-# 로스 :  0.628129780292511
-
-# MaxAbsScaler
-# 로스 :  
-
-# RobustScaler
-# 로스 :  

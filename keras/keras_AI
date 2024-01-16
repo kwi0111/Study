@@ -1,3 +1,10 @@
+train_test_split(stratify) : 훈련 데이터와 테스트에서 동일한 비율을 유지
+
+F_score는 정밀도(precision)와 재현율(recall)의 조화평균으로 계산되는 지표
+f1 = f1_score(y_test, y_predict)
+
+데이터 스케일링(Data Scaling)
+
 
 
 

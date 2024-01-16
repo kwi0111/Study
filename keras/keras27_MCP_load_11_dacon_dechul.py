@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
-from keras.models import Sequential
+from keras.models import Sequential, load_model
 from keras.layers import Dense
-from keras.callbacks import EarlyStopping
+from keras.callbacks import EarlyStopping, ModelCheckpoint
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score, accuracy_score
 from sklearn.preprocessing import MinMaxScaler
@@ -108,36 +108,42 @@ from sklearn.preprocessing import StandardScaler, RobustScaler  # StandardScaler
 
 
 
-#2. 모델 구성 
+# #2. 모델 구성 
 
-model = Sequential()
-model.add(Dense(200, input_dim=13))
-model.add(Dense(350,activation='relu'))
-model.add(Dense(80))
-model.add(Dense(50))
-model.add(Dense(10))
-model.add(Dense(7, activation='softmax'))
+# model = Sequential()
+# model.add(Dense(200, input_dim=13))
+# model.add(Dense(350,activation='relu'))
+# model.add(Dense(80))
+# model.add(Dense(50))
+# model.add(Dense(10))
+# model.add(Dense(7, activation='softmax'))
 
 
-#3.컴파일, 훈련
-model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-es = EarlyStopping(monitor='val_loss',
-                mode='min',
-                patience=500,
-                verbose=1,
-                restore_best_weights=True
-                )
+# #3.컴파일, 훈련
+# model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+# es = EarlyStopping(monitor='val_loss',
+#                 mode='min',
+#                 patience=500,
+#                 verbose=1,
+#                 restore_best_weights=True
+#                 )
+# mcp = ModelCheckpoint(monitor='val_loss',
+#                       mode='auto',
+#                       verbose=1,
+#                       save_best_only=True,
+#                       filepath='../_data/_save/MCP/keras26_dacon_dechul_MCP1.hdf5'
+#                       )
+# model.fit(x_train, y_train, epochs=10000, batch_size = 2500,
+#                 validation_split=0.2,
+#                 callbacks=[es, mcp],
+#                 verbose=1
+#                 )
 
-model.fit(x_train, y_train, epochs=10000, batch_size = 2500,
-                validation_split=0.25,
-                callbacks=[es],
-                verbose=1
-                )
-
+model = load_model('../_data/_save/MCP/keras26_dacon_dechul_MCP1.hdf5')
 #4.평가, 예측
 results = model.evaluate(x_test, y_test)
 y_predict = model.predict(x_test)
-arg_pre = np.argmax(y_predict, axis=1)    #  argmax : NumPy 배열에서 가장 높은 값을 가진 값의 인덱스를 반환
+arg_pre = np.argmax(y_predict, axis=1)    
 arg_test = np.argmax(y_test, axis=1)
 y_submit = model.predict(test_csv)
 submit = np.argmax(y_submit, axis=1)
@@ -153,29 +159,5 @@ print("acc : ", results[1])
 print("f1 : ", f1)  
 submission_csv.to_csv(path + "submission_0116.csv", index=False)
 
-'''
-'''
-
-'''
-
-'''
-# 그냥
-# 로스 :  1.262561321258545
-
-# MinMaxScaler
-# 로스 :  1.2389674186706543
-
-# StandardScaler
-# 로스 :  1.2393440008163452
-
-# MaxAbsScaler
-# 로스 :  1.239452600479126
-
-# RobustScaler
-# 로스 :  1.2408760786056519
-
-
-
-# 로스 :  1.5968209505081177
 
 

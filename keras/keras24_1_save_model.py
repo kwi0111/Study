@@ -1,4 +1,4 @@
-# 09_1에서 가져옴
+# 23_1에서 가져옴
 
 # 보스턴에 관한 데이터
 import numpy as np
@@ -12,21 +12,13 @@ from sklearn.datasets import load_boston
 
 #1. 데이터
 datasets = load_boston()        # 변수에 집어 넣은다음 프린트
-print(datasets)
 x = datasets.data           # x에서 스케일링
 y = datasets.target         # y 건들지 않는다.
-print(x)
-print(x.shape)  #(506, 13) 컬럼이 무엇인지 모름.
-print(y)
 print(x.shape, y.shape)  #(506, 13), (506,)
-
 print(datasets.feature_names)
 #['CRIM' 'ZN' 'INDUS' 'CHAS' 'NOX' 'RM' 'AGE' 'DIS' 'RAD' 'TAX' 'PTRATIO' 'B' 'LSTAT']
-
 print(datasets.DESCR)   #설명하다. 묘사하다. 데이터셋의 내용
 
-
-# 스케일러 x_train 에서 해야함
 x_train, x_test, y_train, y_test = train_test_split(x, y,               
                                                     train_size=0.7,
                                                     random_state=1140,     
@@ -39,29 +31,27 @@ from sklearn.preprocessing import StandardScaler, RobustScaler  # StandardScaler
 # scaler = MaxAbsScaler() # 클래스 정의
 scaler = RobustScaler() # 클래스 정의
 
-
 x_train = scaler.fit_transform(x_train)
 x_test = scaler.fit_transform(x_test)
-
-# scaler.fit(x_train)
-# x_train = scaler.transform(x_train)
-# x_test = scaler.transform(x_test)
 # print(np.min(x_train))  # 0.0
 # print(np.min(x_test))  # -0.010370370370370367
 # print(np.max(x_train))  # 1.0000000000000002
 # print(np.max(x_test))  # 1.0280851063829786
 
-
-
-
 #2. 모델 구성 
 model = Sequential()
-model.add(Dense(5, input_dim=13))           # 행무시, 열우선
+model.add(Dense(5, input_dim=13))
 model.add(Dense(10))
 model.add(Dense(40))
 model.add(Dense(60))
 model.add(Dense(20))
 model.add(Dense(1))
+
+model.summary()
+# model.save("c:\_data\_save\keras24_save_model.h5") # 절대
+model.save("..\_data\_save\keras24_save_model.h5") # 상대 //. 한개는 그 위치 저장 / .. 두개는 상위 폴더 저장
+
+
 
 #3. 컴파일, 훈련 
 model.compile(loss="mse", optimizer='adam')
@@ -81,19 +71,5 @@ print("로스 : ", loss)
 print("r2 스코어 : " , r2)
 print("걸린시간 : ", round(end_time - start_time, 2),"초")     # 
 
-# 그냥
-# 로스 :  39.140785217285156
-
-# MinMaxScaler
-# 로스 :  24.994285583496094
 
 
-# StandardScaler
-# 로스 :  23.470680236816406
-
-
-# MaxAbsScaler
-# 로스 :  22.6903018951416
-
-# RobustScaler
-# 로스 :  24.349830627441406
