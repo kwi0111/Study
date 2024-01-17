@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
 from keras.models import Sequential
-from keras.layers import Dense
-from keras.callbacks import EarlyStopping
+from keras.layers import Dense, Dropout
+from keras.callbacks import EarlyStopping, ModelCheckpoint
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score, accuracy_score
 from sklearn.preprocessing import MinMaxScaler
@@ -88,17 +88,17 @@ print(y_ohe.shape)
 x_train, x_test, y_train, y_test = train_test_split(
                                                     x,
                                                     y_ohe,             
-                                                    train_size=0.85,
-                                                    random_state=123,
+                                                    train_size=0.86,
+                                                    random_state=2024,
                                                     stratify=y,
                                                     shuffle=True,
                                                     )
 from sklearn.preprocessing import MinMaxScaler, MaxAbsScaler
 from sklearn.preprocessing import StandardScaler, RobustScaler  # StandardScaler 표준편차 (편차 쏠릴때 사용) // 
 # scaler = MinMaxScaler() # 클래스 정의
-# scaler = StandardScaler() # 클래스 정의
+scaler = StandardScaler() # 클래스 정의
 # scaler = MaxAbsScaler() # 클래스 정의
-scaler = RobustScaler() # 클래스 정의
+# scaler = RobustScaler() # 클래스 정의
 
 x_train = scaler.fit_transform(x_train)
 x_test = scaler.fit_transform(x_test)
@@ -113,26 +113,44 @@ test_csv = scaler.fit_transform(test_csv)
 #2. 모델 구성 
 
 model = Sequential()
-model.add(Dense(600, input_dim=13))
-model.add(Dense(300,activation='relu'))
-model.add(Dense(200))
-model.add(Dense(100))
-model.add(Dense(50))
+model.add(Dense(10, input_dim=13, activation='swish'))
+model.add(Dense(80, activation='swish'))
+model.add(Dense(60, activation='swish'))
+model.add(Dense(20, activation='swish'))
+model.add(Dense(10, activation='swish'))
+model.add(Dense(5, activation='swish'))
+model.add(Dense(10, activation='swish'))
+model.add(Dense(10, activation='swish'))
+model.add(Dense(5, activation='swish'))
+model.add(Dense(10, activation='swish'))
 model.add(Dense(7, activation='softmax'))
 
 
 #3.컴파일, 훈련
+import datetime
+date = datetime.datetime.now()  
+date = date.strftime("%m%d_%H%M")   # "%m%d_%H%M" 월 일 시간 분 // _는 문자
+MCP_path = '../_data/_save/MCP/' 
+filename = '{epoch:04d}-{val_loss:.4f}.hdf5'  # 히스토리로 반환 되는 놈들 // 훈련 횟수 - 발로스 // 04d : 4자리수 까지  // 04f : 소수 4번째 자리 까지 // ex) 1000-0.3333.hdf5
+filepath = "".join([MCP_path, 'k25_', date, '_', filename]) 
+
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 es = EarlyStopping(monitor='val_loss',
                 mode='min',
-                patience=500,
+                patience=700,
                 verbose=1,
                 restore_best_weights=True
                 )
+mcp = ModelCheckpoint(monitor='val_loss',
+                      mode='auto',
+                      verbose=1,
+                      save_best_only=True,
+                      filepath=filepath,
+                      )
 
-model.fit(x_train, y_train, epochs=10000, batch_size = 2500,
-                validation_split=0.2,
-                callbacks=[es],
+model.fit(x_train, y_train, epochs=100, batch_size = 1500,
+                validation_split=0.18,
+                callbacks=[es, mcp],
                 verbose=1
                 )
 
@@ -153,15 +171,14 @@ acc = accuracy_score(y_test, y_predict)
 print("로스 : ", results[0])  
 print("acc : ", results[1])  
 print("f1 : ", f1)  
-submission_csv.to_csv(path + "submission_0116.csv", index=False)
+submission_csv.to_csv(path + "submission_0117.csv", index=False)
+
+
 
 '''
 '''
+# 로스 :  0.254214882850647
+# acc :  0.9122533798217773
+# f1 :  0.8688767827154674
 
-'''
-
-'''
-# 로스 :  0.4572313725948334
-# acc :  0.8357909321784973
-# f1 :  0.7731837394308622
 

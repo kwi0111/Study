@@ -48,8 +48,8 @@ model.add(Dense(20))
 model.add(Dense(1))
 
 model.summary()
-# model.save("c:\_data\_save\keras24_save_model.h5") # 절대
-model.save("..\_data\_save\keras24_save_model.h5") # 상대 //. 한개는 그 위치 저장 / .. 두개는 상위 폴더 저장
+# model.save("c:\_data\_save\keras24_save_model.h5") # 절대 경로
+model.save("..\_data\_save\keras24_save_model.h5") # 상대 경로//. 한개는 그 위치 저장 / .. 두개는 상위 폴더 저장
 
 
 

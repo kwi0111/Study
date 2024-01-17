@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
 from keras.models import Sequential
-from keras.layers import Dense
-from keras.callbacks import EarlyStopping, ModelCheckpoint
+from keras.layers import Dense, Dropout
+from keras.callbacks import EarlyStopping
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score, accuracy_score
 from sklearn.preprocessing import MinMaxScaler
@@ -76,7 +76,6 @@ ohe = OneHotEncoder(sparse = False)
 ohe.fit(y)
 y_ohe = ohe.transform(y)
 print(y.shape)  
-print(y_ohe.shape)  
 
 
 
@@ -88,16 +87,16 @@ print(y_ohe.shape)
 x_train, x_test, y_train, y_test = train_test_split(
                                                     x,
                                                     y_ohe,             
-                                                    train_size=0.85,
-                                                    random_state=123,
+                                                    train_size=0.86,
+                                                    random_state=2024,
                                                     stratify=y,
                                                     shuffle=True,
                                                     )
 from sklearn.preprocessing import MinMaxScaler, MaxAbsScaler
 from sklearn.preprocessing import StandardScaler, RobustScaler  # StandardScaler 표준편차 (편차 쏠릴때 사용) // 
 # scaler = MinMaxScaler() # 클래스 정의
-# scaler = StandardScaler() # 클래스 정의
-scaler = MaxAbsScaler() # 클래스 정의
+scaler = StandardScaler() # 클래스 정의
+# scaler = MaxAbsScaler() # 클래스 정의
 # scaler = RobustScaler() # 클래스 정의
 
 
@@ -106,57 +105,64 @@ x_train = scaler.transform(x_train)
 x_test = scaler.transform(x_test)
 test_csv = scaler.transform(test_csv)
 
-print(x_test)
-
-# #2. 모델 구성 
-
-# model = Sequential()
-# model.add(Dense(200, input_dim=13))
-# model.add(Dense(350,activation='relu'))
-# model.add(Dense(80))
-# model.add(Dense(50))
-# model.add(Dense(10))
-# model.add(Dense(7, activation='softmax'))
 
 
-# #3.컴파일, 훈련
-# model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-# es = EarlyStopping(monitor='val_loss',
-#                 mode='min',
-#                 patience=500,
-#                 verbose=1,
-#                 restore_best_weights=True
-#                 )
-# mcp = ModelCheckpoint(monitor='val_loss',
-#                       mode='auto',
-#                       verbose=1,
-#                       save_best_only=True,
-#                       filepath='../_data/_save/MCP/keras26_dacon_dechul_MCP1.hdf5'
-#                       )
-# model.fit(x_train, y_train, epochs=10000, batch_size = 2500,
-#                 validation_split=0.2,
-#                 callbacks=[es, mcp],
-#                 verbose=1
-#                 )
+#2. 모델 구성 
 
-# #4.평가, 예측
-# results = model.evaluate(x_test, y_test)
-# y_predict = model.predict(x_test)
-# arg_pre = np.argmax(y_predict, axis=1)    
-# arg_test = np.argmax(y_test, axis=1)
-# y_submit = model.predict(test_csv)
-# submit = np.argmax(y_submit, axis=1)
-# submitssion = le.inverse_transform(submit)
+model = Sequential()
+model.add(Dense(10, input_dim=13, activation='swish'))
+model.add(Dense(80, activation='swish'))
+model.add(Dropout(0.2))
+model.add(Dense(60, activation='swish'))
+model.add(Dense(10, activation='swish'))
+model.add(Dense(5, activation='swish'))
+model.add(Dense(10, activation='swish'))
+model.add(Dense(10, activation='swish'))
+model.add(Dense(5, activation='swish'))
+model.add(Dropout(0.2))
+model.add(Dense(7, activation='softmax'))
+
+
+#3.컴파일, 훈련
+model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+es = EarlyStopping(monitor='val_loss',
+                mode='min',
+                patience=600,
+                verbose=1,
+                restore_best_weights=True
+                )
+
+model.fit(x_train, y_train, epochs=10000, batch_size = 2024,
+                validation_split=0.18,
+                callbacks=[es],
+                verbose=1
+                )
+
+#4.평가, 예측
+results = model.evaluate(x_test, y_test)
+y_predict = model.predict(x_test)
+arg_pre = np.argmax(y_predict, axis=1)    #  argmax : NumPy 배열에서 가장 높은 값을 가진 값의 인덱스를 반환
+arg_test = np.argmax(y_test, axis=1)
+y_submit = model.predict(test_csv)
+submit = np.argmax(y_submit, axis=1)
+submitssion = le.inverse_transform(submit)
       
-# submission_csv['대출등급'] = submitssion
-# y_predict = ohe.inverse_transform(y_predict)
-# y_test = ohe.inverse_transform(y_test)
-# f1 = f1_score(y_test, y_predict, average='macro')
-# acc = accuracy_score(y_test, y_predict)
-# print("로스 : ", results[0])  
-# print("acc : ", results[1])  
-# print("f1 : ", f1)  
-# submission_csv.to_csv(path + "submission_0116.csv", index=False)
+submission_csv['대출등급'] = submitssion
+y_predict = ohe.inverse_transform(y_predict)
+y_test = ohe.inverse_transform(y_test)
+f1 = f1_score(y_test, y_predict, average='macro')
+acc = accuracy_score(y_test, y_predict)
+print("로스 : ", results[0])  
+print("acc : ", results[1])  
+print("f1 : ", f1)  
+submission_csv.to_csv(path + "submission_0117_2.csv", index=False)
 
+'''
+로스 :  0.2747177481651306
+acc :  0.9085447192192078
+f1 :  0.8775608046881204
+'''
 
+'''
 
+'''

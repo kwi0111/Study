@@ -61,7 +61,7 @@ start_time = time.time()   #현재 시간
 model.fit(x_train, y_train, epochs=100, batch_size=10)
 end_time = time.time()   #끝나는 시간
 
-model.save("..\_data\_save\keras24_3_save_model2.h5") #2의 모델은 같다. // 
+model.save("..\_data\_save\keras24_3_save_model2.h5") #2의 모델은 같다. // fit까지
 
 
 
