@@ -98,24 +98,26 @@ from sklearn.preprocessing import StandardScaler, RobustScaler  # StandardScaler
 # scaler = MinMaxScaler() # 클래스 정의
 # scaler = StandardScaler() # 클래스 정의
 # scaler = MaxAbsScaler() # 클래스 정의
-# scaler = RobustScaler() # 클래스 정의
+scaler = RobustScaler() # 클래스 정의
 
+x_train = scaler.fit_transform(x_train)
+x_test = scaler.fit_transform(x_test)
+test_csv = scaler.fit_transform(test_csv)
 
 # scaler.fit(x_train)
 # x_train = scaler.transform(x_train)
 # x_test = scaler.transform(x_test)
-# test_csv = scaler.transform(test_csv)
 
 
 
 #2. 모델 구성 
 
 model = Sequential()
-model.add(Dense(200, input_dim=13))
-model.add(Dense(350,activation='relu'))
-model.add(Dense(80))
+model.add(Dense(600, input_dim=13))
+model.add(Dense(300,activation='relu'))
+model.add(Dense(200))
+model.add(Dense(100))
 model.add(Dense(50))
-model.add(Dense(10))
 model.add(Dense(7, activation='softmax'))
 
 
@@ -129,7 +131,7 @@ es = EarlyStopping(monitor='val_loss',
                 )
 
 model.fit(x_train, y_train, epochs=10000, batch_size = 2500,
-                validation_split=0.25,
+                validation_split=0.2,
                 callbacks=[es],
                 verbose=1
                 )
@@ -159,23 +161,7 @@ submission_csv.to_csv(path + "submission_0116.csv", index=False)
 '''
 
 '''
-# 그냥
-# 로스 :  1.262561321258545
-
-# MinMaxScaler
-# 로스 :  1.2389674186706543
-
-# StandardScaler
-# 로스 :  1.2393440008163452
-
-# MaxAbsScaler
-# 로스 :  1.239452600479126
-
-# RobustScaler
-# 로스 :  1.2408760786056519
-
-
-
-# 로스 :  1.5968209505081177
-
+# 로스 :  0.4572313725948334
+# acc :  0.8357909321784973
+# f1 :  0.7731837394308622
 
