@@ -1,7 +1,7 @@
 # dropout
 
 import numpy as np
-from keras.models import Sequential, load_model
+from keras.models import Sequential, load_model     # 순차적모델 // 친구들 더 있다. // 케라스에서 두가지  (시퀀셜, 함수형 모델)
 from keras.layers import Dense, Dropout
 from sklearn.model_selection import train_test_split
 import warnings

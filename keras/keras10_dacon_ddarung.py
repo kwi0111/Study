@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from keras.models import Sequential
 from keras.layers import Dense
-from sklearn.model_selection import train_test_split, mean_squared_error
+from sklearn.model_selection import train_test_split
 
 
 #1. 데이터          // 판다스, 넘파이
@@ -79,7 +79,7 @@ model.add(Dense(1))
 
 #3. 컴파일, 훈련
 model.compile(loss='mse', optimizer='adam')
-model.fit(x_train, y_train, epochs=500, batch_size=100)
+model.fit(x_train, y_train, epochs=50000, batch_size=100)
 
 
 #4. 평가, 예측

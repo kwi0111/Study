@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
-from keras.models import Sequential
-from keras.layers import Dense, Dropout
+from keras.models import Sequential, Model
+from keras.layers import Dense, Dropout, Input
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score, accuracy_score
@@ -87,7 +87,7 @@ print(y.shape)
 x_train, x_test, y_train, y_test = train_test_split(
                                                     x,
                                                     y_ohe,             
-                                                    train_size=0.86,
+                                                    train_size=0.89,    #
                                                     random_state=2024,
                                                     stratify=y,
                                                     shuffle=True,
@@ -109,19 +109,35 @@ test_csv = scaler.transform(test_csv)
 
 #2. 모델 구성 
 
-model = Sequential()
-model.add(Dense(10, input_dim=13, activation='swish'))
-model.add(Dense(100, activation='swish')) # 80
-model.add(Dense(60, activation='swish'))
-model.add(Dense(20, activation='swish'))
-model.add(Dense(10, activation='swish'))
-model.add(Dense(5, activation='swish'))
-model.add(Dense(10, activation='swish'))
-model.add(Dense(10, activation='swish'))
-model.add(Dense(10, activation='swish'))
-model.add(Dense(5, activation='swish'))
-model.add(Dense(10, activation='swish'))
-model.add(Dense(7, activation='softmax'))
+# model = Sequential()
+# model.add(Dense(10, input_dim=13, activation='swish'))
+# model.add(Dense(100, activation='swish')) # 80
+# model.add(Dense(60, activation='swish'))
+# model.add(Dense(20, activation='swish'))
+# model.add(Dense(10, activation='swish'))
+# model.add(Dense(5, activation='swish'))
+# model.add(Dense(10, activation='swish'))
+# model.add(Dense(10, activation='swish'))
+# model.add(Dense(10, activation='swish'))
+# model.add(Dense(5, activation='swish'))
+# model.add(Dense(10, activation='swish'))
+# model.add(Dense(7, activation='softmax'))
+
+#2. 모델구성(함수형)
+input1 = Input(shape=(13, ))
+dense1 = Dense(10, activation='swish')(input1)
+dense2 = Dense(80, activation='swish')(dense1)
+dense3 = Dense(60, activation='swish')(dense2)
+dense4 = Dense(20, activation='swish')(dense3)
+dense5 = Dense(10, activation='swish')(dense4)
+dense6 = Dense(5, activation='swish')(dense5)
+dense7 = Dense(10, activation='swish')(dense6)
+dense8 = Dense(10, activation='swish')(dense7)
+dense9 = Dense(10, activation='swish')(dense8)
+dense10 = Dense(5, activation='swish')(dense9)
+dense11 = Dense(10, activation='swish')(dense10)
+output1 = Dense(7, activation='softmax')(dense11)
+model = Model(inputs = input1, outputs = output1)
 
 
 #3.컴파일, 훈련
@@ -147,7 +163,7 @@ mcp = ModelCheckpoint(monitor='val_loss',
                       )
 
 model.fit(x_train, y_train, epochs=15000, batch_size = 1424,
-                validation_split=0.18,
+                validation_split=0.20,  #
                 callbacks=[es, mcp],
                 verbose=1
                 )
