@@ -87,9 +87,9 @@ print(y.shape)
 x_train, x_test, y_train, y_test = train_test_split(
                                                     x,
                                                     y_ohe,             
-                                                    train_size=0.89,    #
+                                                    train_size=0.93,    #
                                                     random_state=2024,
-                                                    stratify=y,
+                                                    stratify=y_ohe,
                                                     shuffle=True,
                                                     )
 from sklearn.preprocessing import MinMaxScaler, MaxAbsScaler
@@ -98,7 +98,7 @@ from sklearn.preprocessing import StandardScaler, RobustScaler  # StandardScaler
 scaler = StandardScaler() # 클래스 정의
 # scaler = MaxAbsScaler() # 클래스 정의
 # scaler = RobustScaler() # 클래스 정의
-
+# 스케일러 연속으로 쓸수있다. // 레이어도 정제 가능 //
 
 scaler.fit(x_train)
 x_train = scaler.transform(x_train)
@@ -109,35 +109,35 @@ test_csv = scaler.transform(test_csv)
 
 #2. 모델 구성 
 
-# model = Sequential()
-# model.add(Dense(10, input_dim=13, activation='swish'))
-# model.add(Dense(100, activation='swish')) # 80
-# model.add(Dense(60, activation='swish'))
-# model.add(Dense(20, activation='swish'))
-# model.add(Dense(10, activation='swish'))
-# model.add(Dense(5, activation='swish'))
-# model.add(Dense(10, activation='swish'))
-# model.add(Dense(10, activation='swish'))
-# model.add(Dense(10, activation='swish'))
-# model.add(Dense(5, activation='swish'))
-# model.add(Dense(10, activation='swish'))
-# model.add(Dense(7, activation='softmax'))
+model = Sequential()
+model.add(Dense(10, input_dim=13, activation='swish'))
+model.add(Dense(800, activation='swish')) # 80
+model.add(Dense(600, activation='swish'))
+model.add(Dense(20, activation='swish'))
+model.add(Dense(10, activation='swish'))
+model.add(Dense(5, activation='swish'))
+model.add(Dense(10, activation='swish'))
+model.add(Dense(10, activation='swish'))
+model.add(Dense(5, activation='swish'))
+model.add(Dense(800, activation='swish'))
+model.add(Dense(10, activation='swish'))
+model.add(Dense(7, activation='softmax'))
 
 #2. 모델구성(함수형)
-input1 = Input(shape=(13, ))
-dense1 = Dense(10, activation='swish')(input1)
-dense2 = Dense(80, activation='swish')(dense1)
-dense3 = Dense(60, activation='swish')(dense2)
-dense4 = Dense(20, activation='swish')(dense3)
-dense5 = Dense(10, activation='swish')(dense4)
-dense6 = Dense(5, activation='swish')(dense5)
-dense7 = Dense(10, activation='swish')(dense6)
-dense8 = Dense(10, activation='swish')(dense7)
-dense9 = Dense(10, activation='swish')(dense8)
-dense10 = Dense(5, activation='swish')(dense9)
-dense11 = Dense(10, activation='swish')(dense10)
-output1 = Dense(7, activation='softmax')(dense11)
-model = Model(inputs = input1, outputs = output1)
+# input1 = Input(shape=(13, ))
+# dense1 = Dense(10, activation='swish')(input1)
+# dense2 = Dense(80, activation='swish')(dense1)
+# dense3 = Dense(60, activation='swish')(dense2)
+# dense4 = Dense(20, activation='swish')(dense3)
+# dense5 = Dense(10, activation='swish')(dense4)
+# dense6 = Dense(5, activation='swish')(dense5)
+# dense7 = Dense(10, activation='swish')(dense6)
+# dense8 = Dense(10, activation='swish')(dense7)
+# dense9 = Dense(10, activation='swish')(dense8)
+# dense10 = Dense(5, activation='swish')(dense9)
+# dense11 = Dense(10, activation='swish')(dense10)
+# output1 = Dense(7, activation='softmax')(dense11)
+# model = Model(inputs = input1, outputs = output1)
 
 
 #3.컴파일, 훈련
@@ -151,7 +151,7 @@ filepath = "".join([MCP_path, 'k23_', date, '_', filename])
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 es = EarlyStopping(monitor='val_loss',
                 mode='min',
-                patience=1000,
+                patience=2000,
                 verbose=1,
                 restore_best_weights=True
                 )
@@ -163,7 +163,7 @@ mcp = ModelCheckpoint(monitor='val_loss',
                       )
 
 model.fit(x_train, y_train, epochs=15000, batch_size = 1424,
-                validation_split=0.20,  #
+                validation_split=0.13,  #
                 callbacks=[es, mcp],
                 verbose=1
                 )
@@ -191,9 +191,58 @@ submission_csv.to_csv(path + "submission_0117_2.csv", index=False)
 로스 :  0.16252931952476501
 acc :  0.9449636340141296
 f1 :  0.9268314268128603
-'''
 
-'''
+발 0.2
+로스 :  0.18973031640052795
+acc :  0.9349688291549683
+f1 :  0.9165771683299866
+
+발 0.17
+로스 :  0.187760591506958
+acc :  0.9360072612762451
+f1 :  0.9152796509835436
+
+발 0.15
+로스 :  0.18486541509628296
+acc :  0.9378893971443176
+f1 :  0.9223869852274916
+
+발 0.13 0.93
+로스 :  0.1594099998474121
+acc :  0.9454179406166077
+f1 :  0.9290122602294401
+
+발 0.1
+로스 :  0.2445290982723236
+acc :  0.9186137318611145
+f1 :  0.9042328663195657
+
+발 0.12
+로스 :  0.20494093000888824
+acc :  0.9302959442138672
+f1 :  0.9129390647928908
+
+발 0.13 배치 1424 -> 1524
+로스 :  0.18184959888458252
+acc :  0.9397066235542297
+f1 :  0.9155483973652124
+
+배치 1524 트레인사이즈 0.93
+로스 :  0.19462506473064423
+acc :  0.930425763130188
+f1 :  0.9146101936659571
+
+배치 1024 발 0.17 트 0.93
+로스 :  0.18713201582431793
+acc :  0.9390298128128052
+f1 :  0.9228856359027988
+
+배치 1224 페이션 1500
+로스 :  0.19295533001422882
+acc :  0.9384364485740662
+f1 :  0.9174710104515917
+
+2024
 
 '''
 

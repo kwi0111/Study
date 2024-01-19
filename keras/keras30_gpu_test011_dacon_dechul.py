@@ -6,7 +6,6 @@ from keras.callbacks import EarlyStopping
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score, accuracy_score
 from sklearn.preprocessing import MinMaxScaler
-from keras.utils import to_categorical #
 
 
 
@@ -133,7 +132,7 @@ es = EarlyStopping(monitor='val_loss',
                 )
 import time
 start_time = time.time()   #현재 시간
-model.fit(x_train, y_train, epochs=10000, batch_size = 2024,
+model.fit(x_train, y_train, epochs=1000, batch_size = 2024,
                 validation_split=0.18,
                 callbacks=[es],
                 verbose=1
@@ -161,9 +160,9 @@ submission_csv.to_csv(path + "submission_0117_2.csv", index=False)
 print("걸린시간 : ", round(end_time - start_time, 2),"초")
 
 '''
-
+로스 :  0.41135647892951965
+acc :  0.8543984293937683
+f1 :  0.79847933169768
+걸린시간 :  151.0 초
 '''
-
-'''
-
-'''
+ 

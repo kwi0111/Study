@@ -130,8 +130,11 @@ print("acc : ", results[1])
 print("걸린시간 : ", round(end_time - start_time, 2),"초")
 
 
-
-
+# 씨피유
+# accuracy_score :  1.0
+# 로스 :  0.018881483003497124
+# acc :  1.0
+# 걸린시간 :  32.7 초
 
 
 

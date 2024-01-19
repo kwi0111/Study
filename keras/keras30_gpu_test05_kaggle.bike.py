@@ -116,11 +116,11 @@ print("r2 스코어 : " , r2)
 print("MSE : ", loss)
 print("걸린시간 : ", round(end_time - start_time, 2),"초")
 
-#
+# 씨피유
+# RMSE :  157.7271813932348
+# r2 스코어 :  0.2154871635408856
+# MSE :  24877.86328125
+# 걸린시간 :  168.64 초
 
-# print("걸린시간 : ", round(end_time - start_time, 2),"초")
-# start_time = time.time()   #현재 시간
-# end_time = time.time()   #끝나는 시간
-# import time
 
 

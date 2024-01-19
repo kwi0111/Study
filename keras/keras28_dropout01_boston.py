@@ -26,11 +26,11 @@ x_train, x_test, y_train, y_test = train_test_split(x, y,
 #2. 모델 구성 // 레이어에서 드롭아웃
 model = Sequential()
 model.add(Dense(10, input_dim=13))
-model.add(Dropout(0.2))    # 디폴트값(?) // 10개중 0.2퍼를 드랍한다.
+model.add(Dropout(0.2))    # default는 0.5 // 10개중 0.2퍼를 드랍한다.
 model.add(Dense(10))
 model.add(Dense(10))
 model.add(Dense(10))
-model.add(Dropout(0.4))
+model.add(Dropout(0.4)) 
 model.add(Dense(10))
 model.add(Dense(1))
 

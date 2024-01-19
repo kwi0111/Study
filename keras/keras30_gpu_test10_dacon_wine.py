@@ -120,3 +120,8 @@ print("로스 : ", results[0])
 print("acc : ", results[1])  
 
 print("걸린시간 : ", round(end_time - start_time, 2),"초")
+
+# 씨피유
+# 로스 :  1.0920246839523315
+# acc :  0.5290908813476562
+# 걸린시간 :  142.59 초
