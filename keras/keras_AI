@@ -1,12 +1,173 @@
-train_test_split(stratify) : 훈련 데이터와 테스트에서 동일한 비율을 유지
+x = np.array([1, 2, 3]) # 1차원 배열 생성
+print(x.ndim) # 해당 배열의 차원 확인
+print(x.dtype)  # 데이터 타입을 확인
+print(x.shape)     #(715, 2)
+print(x.columns)    # 인덱스 칼럼 확인
 
-F_score는 정밀도(precision)와 재현율(recall)의 조화평균으로 계산되는 지표
+print(train_csv.isna().sum())           # 데이터 프레임 결측치 확인
+print(train_csv.info())         # Non-Null Count : 결측치가 아닌 데이터 갯수
+print(test_csv.info())          # 컬럼 이름, 결측을 제외한 값 카운트, 타입을 보여줌.
+print(train_csv.describe())  
+
+
+x = x.transpose() # ex) (2,10) -> (10,2)
+                  # 전치행렬 : x = x.T으로 해도 된다.
+
+# batch_size 개념
+Batch size(배치 크기)는 신경망 모델을 훈련시킬 때 사용되는 데이터 샘플의 그룹 크기
+훈련 데이터를 한 번에 모두 네트워크에 전달하는 것이 아니라 작은 배치로 나눠서 전달함으로써 효율적으로 학습을 수행
+일반적으로 데이터셋은 매우 크기 때문에 한 번에 전체 데이터를 처리하는 것은 메모리와 계산 리소스 측면에서 비효율적일 수 있다.
+이에 따라 데이터를 작은 배치로 나누어 모델을 반복적으로 업데이트하는 방법이 사용됨
+이 과정에서 각 배치에 대한 손실(loss)을 계산하고, 이를 사용하여 모델의 가중치를 조정
+
+
+from sklearn.model_selection import train_test_split
+x_train, x_test, y_train, y_test = train_test_split(x, y, 
+                                                    train_size=0.7,     # 디폴트 : 0.75
+                                                    test_size=0.3,      # 디폴트 : 0.25  // 1이상 오버되면 에러 // 이하는 작동하지만 데이터 손실 O
+                                                    random_state=1,     # 이것만 잘 조절해도 성적이 좋을 수 있다. // 데이터 클수록 발휘한다.
+                                                    shuffle=True,       # 디폴트 : True  // False : 섞지 않겠다.
+                                                    # stratify=         # 층을 이루게 하다, 계층화하다
+                                                    )   
+평가데이터는 가중치에 영향 x
+train_test_split(stratify) : 훈련 데이터와 테스트에서 동일한 비율을 유지 (불균형한 클래스 분포 방지)
+
+# 그림 그리는 API 땡겨오기
+import matplotlib.pyplot as plt
+plt.figure(figsize=(9,6))
+plt.plot(hist.history['loss'], c='red', label='loss', marker='.')
+plt.plot(hist.history['val_loss'], c='blue', label='val_loss', marker='.')
+plt.legend(loc='upper right') # 라벨
+plt.title('따릉이 LOSS') #제목
+plt.xlabel('epoch')
+plt.ylabel('loss')
+plt.grid()
+plt.show()
+
+plt.scatter(x, y)   # 흩뿌리다. 
+plt.plot(x, results, color='red')
+plt.show()
+# x(파란선) :  실제 데이터 // results(빨간선) : 예측 데이터
+
+
+import time
+start_time = time.time()   #현재 시간
+end_time = time.time()   #끝나는 시간
+print("걸린시간 : ", round(end_time - start_time, 2),"초")
+
+
+############## 결측치 처리, 1.제거 ############
+# print(train_csv.isnull().sum())       
+print(train_csv.isna().sum())           # 데이터 프레임 결측치 확인
+train_csv = train_csv.dropna()          # 결측치있으면 행이 삭제됨
+print(train_csv.info())
+############## 결측치 처리, 2.채움 ############
+test_csv = test_csv.fillna(test_csv.mean())     # train에서 없어진 결측치를 평균인 중간값으로 채움.
+print(test_csv.info())
+############ x 와 y를 분리 ################
+x = train_csv.drop(['count'], axis=1)       # 행삭제 : axis = 0 // 열삭제 : axis = 1 // train_csv에 있는 'count'열 삭제 
+print(x)
+y = train_csv['count']                      # train_csv에 있는 'count'열을 y로 설정
+print(y)
+
+print(np.unique(y, return_counts=True)) # (array([3, 4, 5, 6, 7, 8, 9], dtype=int64), array([  26,  186, 1788, 2416,  924,  152,    5], dtype=int64))
+print(pd.value_counts(y))
+6    2416
+5    1788
+7     924
+4     186
+8     152
+3      26
+9       5
+
+
+
+-----------------평가 지표-----------------
+from sklearn.metrics import r2_score
+r2 = r2_score(y_test, y_predict)    # 실제값, 예측값
+print("r2 스코어 : " , r2)
+
+r2_score는 회귀 모델의 성능을 측정하는 지표
+R²는 예측 모델이 주어진 데이터를 얼마나 잘 설명
+R² 값은 0에서 1 사이의 범위에 있으며, 높을수록 모델이 데이터를 더 잘 설명한다는 것을 나타낸다.
+
 f1 = f1_score(y_test, y_predict)
+F_score는 정밀도(precision)와 재현율(recall)의 조화평균으로 계산되는 지표
+
+y_predict = model.predict(x_test)
+def RMSE(y_test, y_predict):
+    return np.sqrt(mean_squared_error(y_test, y_predict))
+rmse = RMSE(y_test, y_predict)
+print("RMSE : ", rmse)  # rmse : 평균 제곱근 오차
+print("MSE : ", loss)   # mse : 평균 제곱 오차
+
+loss = 'binary_crossentropy' -> 이진 분류때 씀 (sigmoid)
+loss = 'categorical_crossentropy' -> 다중 클래스 분류에서 주로 사용 (softmax)
+
+
+
+
+#1. 원핫엔코딩 keras 
+from keras.utils import to_categorical # 10진수를 2진수로 바꿔주는 함수
+y_ohe = to_categorical(y)
+print(y_ohe)
+print(y_ohe.shape)  # (178, 3)
+
+#2. 원핫엔코딩 판다스
+y_ohe = pd.get_dummies(y, dtype='int')
+print(y_ohe)
+print(y_ohe.shape)  # (178, 3)
+
+
+#3. 원핫엔코딩 사이킷런
+from sklearn.preprocessing import OneHotEncoder
+y = y.reshape(-1, 1)    
+#  차원을 재구조화 및 변경하고자 할 때 reshape() 함수를 사용
+# 원래 y는 (178,) --> reshape로 (178, 1)
+# - reshape(-1, 정수) 일때
+# : 행 자리에 -1, 그리고 열 위치에 임의의 정수가 있을 때 정수에 따라서 178개의 원소가 해당 열 개수만큼 자동으로 구조화
+print(y.shape)  # (178, 1)
+ohe = OneHotEncoder(sparse=True)
+y = ohe.fit_transform(y).toarray()  # toarray : 넘파이 배열로 변환하는 메서드
+print(y)
+print(y.shape)  # (178, 3)
+
+[0, 1, 0]이 One-Hot 인코딩된 벡터라면 argmax를 사용하면
+두 번째 위치에 해당하는 인덱스 1이 반환
+
+
+# 데이터 전처리
+train_csv['type'] = train_csv['type'].map({"white":1, "red":0}).astype(int)
+test_csv['type'] = test_csv['type'].replace({"white":1, "red":0}).astype(int)
+# map은 주로 시리즈에 적용, replace는 데이터프레임 또는 시리즈에 대해 전체적으로 적용
+
+model.save("..\_data\_save\keras24_save_model.h5") # 상대 경로//. 한개는 그 위치 저장 / .. 두개는 상위 폴더 저장
+model = load_model('..\_data\_save\keras24_save_model.h5')
+model.save_weights("..\_data\_save\keras24_5_save_model2.h5")
+model.load_weights("..\_data\_save\keras24_5_save_model2.h5")   # 모델이 없어서 불러오든가 구성되어있어야한다.
+
+mcp = ModelCheckpoint(monitor='val_loss',
+                      mode='auto',
+                      verbose=1,
+                      save_best_only=True,
+                      filepath='../_data/_save/MCP/keras25_MCP1.hdf5',
+                      )
+# 검증 손실이 감소할 때만 모델이 저장, 과적합을 방지하고 최적의 모델 저장
+
+
+
+
+
 
 fit_transform( )과 transform( )의 차이
 스케일링을 할 때 꼭 사용하는게 fit_transform(), fit(), transform()메서드이다. 
 fit_transform()은 말그대로 fit()과 transform()을 한번에 처리할 수 있게 하는 메서드인데 조심해야 하는 것은 테스트 데이터에는 fit_transform()메서드를 쓰면 안된다.
 fit()은 데이터를 학습시키는 메서드이고 transform()은 실제로 학습시킨 것을 적용하는 메서드이다.
+
+fit 메서드는 주어진 데이터에서 평균과 표준편차를 계산하여 학습
+transform 메서드를 통해 학습된 평균과 표준편차를 적용하여 데이터 표준화
+
+
 
 데이터 스케일링(Data Scaling)
 

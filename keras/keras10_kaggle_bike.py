@@ -79,12 +79,12 @@ print("r2 스코어 : " , r2)
 # print(submission_csv[submission_csv['count']>0])
 print("음수 갯수 : ", submission_csv[submission_csv['count']<0].count()) ## 암기 // 데이터 프레임의 조건 
 
-y_predict = model.predict(x_test)   # 성능에 영향 x
+y_predict = model.predict(x_test)
 def RMSE(y_test, y_predict):
     return np.sqrt(mean_squared_error(y_test, y_predict))
 rmse = RMSE(y_test, y_predict)
-print("RMSE : ", rmse)
-print("MSE : ", loss)
+print("RMSE : ", rmse)  # rmse : 평균 제곱근 오차
+print("MSE : ", loss)   # mse : 평균 제곱 오차
 
 
 ''' 만드는 방법

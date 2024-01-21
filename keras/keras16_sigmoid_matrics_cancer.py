@@ -23,7 +23,7 @@ print(pd.DataFrame(y).value_counts())
 print(pd.Series(y).value_counts())
 print(pd.value_counts(y))                     # 행렬 데이터 일때 // mse로는 0과 1을 찾을수 없다. // 
 
-
+'''
 # # 넘파이 0과 1의 갯수가 몇개인지 찾아라.
 # unique, counts = np.unique(y, return_counts=True)
 # print(unique, counts)    # [0 1] [212 357]
@@ -94,5 +94,7 @@ print("r2 스코어 : " , r2)  # r2 조금 못미더움 // 정확도는 predict�
 '''
 # 로스, 정확도 :  [0.06485937535762787, 0.9824561476707458]
 # r2 스코어 :  0.9397867375545318
+
+'''
 
 '''

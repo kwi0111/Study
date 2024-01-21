@@ -50,8 +50,9 @@ print(train_csv.dtypes)
 print(test_csv.dtypes)
 
 # x와 y를 분리
-x = train_csv.drop(['대출등급'], axis=1)
+x = train_csv.drop(['대출등급','총계좌수'], axis=1)
 y = train_csv['대출등급']
+test_csv = test_csv.drop(['총계좌수'], axis=1)
 print(x.shape, y.shape) # (96294, 13) (96294,)
 print(pd.value_counts(y))
 # 대출등급
@@ -110,9 +111,11 @@ test_csv = scaler.transform(test_csv)
 #2. 모델 구성 
 
 model = Sequential()
-model.add(Dense(10, input_dim=13, activation='swish'))
+model.add(Dense(10, input_dim=12, activation='swish'))
 model.add(Dense(800, activation='swish')) # 80
+model.add(Dropout(0.2))
 model.add(Dense(600, activation='swish'))
+model.add(Dropout(0.2))
 model.add(Dense(20, activation='swish'))
 model.add(Dense(10, activation='swish'))
 model.add(Dense(5, activation='swish'))
@@ -120,6 +123,7 @@ model.add(Dense(10, activation='swish'))
 model.add(Dense(10, activation='swish'))
 model.add(Dense(5, activation='swish'))
 model.add(Dense(800, activation='swish'))
+model.add(Dropout(0.2))
 model.add(Dense(10, activation='swish'))
 model.add(Dense(7, activation='softmax'))
 
@@ -163,7 +167,7 @@ mcp = ModelCheckpoint(monitor='val_loss',
                       )
 
 model.fit(x_train, y_train, epochs=15000, batch_size = 1424,
-                validation_split=0.13,  #
+                validation_split=0.15,  #
                 callbacks=[es, mcp],
                 verbose=1
                 )

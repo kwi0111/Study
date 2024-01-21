@@ -47,12 +47,14 @@ print(train_csv.shape)
 print(test_csv.shape)
 print(train_csv.dtypes)
 print(test_csv.dtypes)
-
 # x와 y를 분리
-x = train_csv.drop(['대출등급'], axis=1)
+x = train_csv.drop(['대출등급','총계좌수'], axis=1)
 y = train_csv['대출등급']
+test_csv = test_csv.drop(['총계좌수'], axis=1)
+
 print(x.shape, y.shape) # (96294, 13) (96294,)
 print(pd.value_counts(y))
+
 # 대출등급
 # 1    28817
 # 2    27623
@@ -66,15 +68,16 @@ print(pd.value_counts(y))
 # mms.fit(x)
 # x = mms.transform(x)
 # test_csv=mms.transform(test_csv)
-
-y = np.reshape(y, (-1,1)) 
+# y = np.array(y).reshape(-1, 1)
 # y = np.array()
 
+y = np.reshape(y, (-1,1)) 
+print(y.shape)  
 
 ohe = OneHotEncoder(sparse = False)
 ohe.fit(y)
 y_ohe = ohe.transform(y)
-print(y.shape)  
+print(y_ohe.shape)  
 
 
 
@@ -88,7 +91,7 @@ x_train, x_test, y_train, y_test = train_test_split(
                                                     y_ohe,             
                                                     train_size=0.86,
                                                     random_state=2024,
-                                                    stratify=y,
+                                                    stratify=y_ohe,
                                                     shuffle=True,
                                                     )
 from sklearn.preprocessing import MinMaxScaler, MaxAbsScaler
@@ -109,15 +112,16 @@ test_csv = scaler.transform(test_csv)
 #2. 모델 구성 
 
 model = Sequential()
-model.add(Dense(10, input_dim=13, activation='swish'))
-model.add(Dense(80, activation='swish'))
+model.add(Dense(100, input_dim=12, activation='swish'))
+model.add(Dense(800, activation='swish'))
 model.add(Dropout(0.2))
-model.add(Dense(60, activation='swish'))
+model.add(Dense(600, activation='swish'))
+model.add(Dropout(0.2))
 model.add(Dense(10, activation='swish'))
-model.add(Dense(5, activation='swish'))
+model.add(Dense(50, activation='swish'))
 model.add(Dense(10, activation='swish'))
 model.add(Dense(10, activation='swish'))
-model.add(Dense(5, activation='swish'))
+model.add(Dense(50, activation='swish'))
 model.add(Dropout(0.2))
 model.add(Dense(7, activation='softmax'))
 
@@ -126,13 +130,13 @@ model.add(Dense(7, activation='softmax'))
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 es = EarlyStopping(monitor='val_loss',
                 mode='min',
-                patience=600,
+                patience=800,
                 verbose=1,
                 restore_best_weights=True
                 )
 import time
 start_time = time.time()   #현재 시간
-model.fit(x_train, y_train, epochs=1000, batch_size = 2024,
+model.fit(x_train, y_train, epochs=10000, batch_size = 1224,
                 validation_split=0.18,
                 callbacks=[es],
                 verbose=1
@@ -159,10 +163,14 @@ print("f1 : ", f1)
 submission_csv.to_csv(path + "submission_0117_2.csv", index=False)
 print("걸린시간 : ", round(end_time - start_time, 2),"초")
 
+
+
 '''
 로스 :  0.41135647892951965
 acc :  0.8543984293937683
 f1 :  0.79847933169768
 걸린시간 :  151.0 초
+
+
+
 '''
- 

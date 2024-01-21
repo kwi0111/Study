@@ -101,7 +101,7 @@ hist = model.fit(x_train, y_train, epochs=100, batch_size=13,
 
 #4. 평가, 예측
 loss = model.evaluate(x_test, y_test)
-y_predict = model.predict(x_test)
+y_predict = model.predict(x_test)   # test_csv가 들어가야겠지..
 y_predict = np.round(y_predict)   # acc에 필요함
 y_submit = model.predict(test_csv)
 y_submit = np.round(y_submit)     # submit으로 제출해야하기 때문에,,
