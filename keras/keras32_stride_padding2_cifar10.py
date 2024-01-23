@@ -29,20 +29,20 @@ print(x_train.shape)
 
 #2. 모델
 model = Sequential()
-model.add(Conv2D(filters=100, kernel_size=(2, 2), padding='same', activation='swish', 
+model.add(Conv2D(filters=100, kernel_size=(2, 2), padding='same', strides=2, activation='swish', 
                  input_shape=(32, 32, 3)))
-model.add(Conv2D(50, (2, 2),padding='same', activation='swish'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Conv2D(50, (2, 2),padding='same', strides=2, activation='swish'))
+# model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Dropout(0.3))
-model.add(Conv2D(100, (2, 2),padding='same', activation='swish'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Conv2D(50, (2, 2),padding='same', activation='swish'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Conv2D(100, (2, 2),padding='same', strides=2, activation='swish'))
+# model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Conv2D(50, (2, 2),padding='same', strides=2, activation='swish'))
+# model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Dropout(0.3))
-model.add(Conv2D(100, (2, 2), padding='same', activation='swish'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Conv2D(50, (2, 2), padding='same', activation='swish'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Conv2D(100, (2, 2), padding='same', strides=2, activation='swish'))
+# model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Conv2D(50, (2, 2), padding='same', strides=2, activation='swish'))
+# model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Flatten())
 model.add(Dropout(0.3))
 model.add(Dense(10, activation='swish'))
@@ -59,7 +59,7 @@ es = EarlyStopping(monitor='val_loss',
                 verbose=1,
                 restore_best_weights=True
                 )
-model.fit(x_train, y_train, epochs=300, batch_size=2000, validation_split=0.2, verbose=1, callbacks=[es])
+model.fit(x_train, y_train, epochs=300, batch_size=64, validation_split=0.2, verbose=1, callbacks=[es])
 
 #4. 평가, 예측 
 results = model.evaluate(x_test, y_test)
@@ -71,9 +71,10 @@ print("acc : ", results[1] )
 
 '''
 
-import matplotlib.pyplot as plt
-plt.imshow(x_train[2])
-plt.show()
-loss :  0.6670249104499817
-acc :  0.7738000154495239
+# import matplotlib.pyplot as plt
+# plt.imshow(x_train[2])
+# plt.show()
+# loss :  0.6670249104499817
+# acc :  0.7738000154495239
 '''
+

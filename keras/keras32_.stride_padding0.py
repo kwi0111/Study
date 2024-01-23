@@ -4,6 +4,7 @@ from keras.datasets import mnist
 from keras.models import Sequential
 from keras.layers import Dense, Conv2D, Flatten
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.metrics import r2_score, f1_score
 
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
@@ -31,11 +32,16 @@ y_test = ohe.fit_transform(y_test.reshape(-1, 1))
 
 #2. 모델
 model = Sequential()
-model.add(Conv2D(9, (2,2), input_shape=(28, 28, 1))) 
+model.add(Conv2D(9, (2,2), 
+                 strides=1,
+                 input_shape=(28, 28, 1),
+                 padding='same',))
+                        # stride : 커널의 보폭
+                        # 모양 같이 하고 싶으면 padding : 'same'쓴다. 'valid'은 디폴트
                         # shape = (batch_size, rows, colums, channels) // 배치 디폴트 32
                         # shape = (batch_size, heights, widths, channels)
-model.add(Conv2D(filters=10, kernel_size=(3,3)))    # 4차원을 받아야함
-model.add(Conv2D(15, (4,4)))
+model.add(Conv2D(filters=10, kernel_size=(3,3),padding='same'))    # 4차원을 받아야함
+model.add(Conv2D(15, (4,4), padding='same') )
 model.add(Flatten())    # 입력 데이터를 1차원으로 평탄화. 2D 혹은 3D의 특징 맵(feature map)을 1D 벡터로 변환, 이후의 레이어에서 처리하기 쉽게 만들어주는 역할 // reshape랑 동일 개념
 model.add(Dense(units=8)) # 주로 2차원 받음 
 model.add(Dense(7, input_shape=(8, )))
@@ -45,8 +51,8 @@ model.add(Dense(10, activation='softmax'))
 
 
 print(model.summary())
-'''
-(kenel_size * channels + bias) * filters = 
+
+# (kenel_size * channels + bias) * filters = 가중치 수, 파라미터 수
 
  
 
@@ -62,11 +68,14 @@ y_predict = model.predict(x_test)
 arg_pre = np.argmax(y_predict, axis=1)
 arg_test = np.argmax(y_test, axis=1)
 
-print(arg_pre)
+f1 = f1_score(arg_test, arg_pre, average='macro')
+print("f1 : ", f1)
 
 
 import matplotlib.pyplot as plt # 이미지 볼때,,
 plt.imshow(x_train[1], 'PuBu')
 plt.show()
 
-'''
+
+# loss 0.3599582314491272
+# acc 0.899399995803833
