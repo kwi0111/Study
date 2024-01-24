@@ -34,6 +34,7 @@ xy_train = train_datagen.flow_from_directory(       # 지정된 디렉토리에�
     target_size=(200, 200),     #사진 작으면 (200, 200)으로 커지고 크면 (200, 200)으로 작아진다 // 모든사진 (200, 200)
     batch_size=160,              # 160이상을 쓰면 x 통데이터로 가져올수 있다.
     class_mode='binary',
+    color_mode='rgb', 
     shuffle=True,
 )   # Found 160 images belonging to 2 classes.
 
@@ -107,13 +108,13 @@ print(y_test.shape)
 
 #2. 모델
 model = Sequential()
-model.add(Conv2D(16, (2,2), padding='same', input_shape = (200,200,3), activation='relu'))
+model.add(Conv2D(32, (2,2), padding='same', strides=2, input_shape = (200,200,3), activation='relu'))
 model.add(Dropout(0.1))
-# model.add(Conv2D(32, (2,2), padding='same', activation='relu' ))
-model.add(Conv2D(8,(2,2), padding='same', activation='relu' ))
-model.add(Dropout(0.1))
-model.add(Conv2D(4, (2,2), padding='same', activation='relu' ))
 model.add(MaxPooling2D())
+# model.add(Conv2D(32, (2,2), padding='same', activation='relu' ))
+model.add(Conv2D(32,(2,2), padding='same',  strides=2, activation='relu' ))
+model.add(Dropout(0.1))
+model.add(Conv2D(16, (2,2), padding='same', strides=2,  activation='relu' ))
 model.add(Flatten())
 model.add(Dense(4, activation='relu')) 
 model.add(Dense(1, activation='sigmoid')) 
@@ -122,7 +123,7 @@ model.add(Dense(1, activation='sigmoid'))
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['acc'])
 es = EarlyStopping(monitor='val_loss',
                 mode='min',
-                patience=100,
+                patience=500,
                 verbose=1,
                 restore_best_weights=True
                 )

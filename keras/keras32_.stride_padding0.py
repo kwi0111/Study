@@ -17,13 +17,13 @@ print(np.unique(y_train, return_counts=True))
 # (array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], dtype=uint8), array([5923, 6742, 5958, 6131, 5842, 5421, 5918, 6265, 5851, 5949],
 #   dtype=int64))
 print(pd.value_counts(y_test))
-x_train = x_train.reshape(60000, 28, 28, 1) # 데이터 내용 순서 변화 없다
+# x_train = x_train.reshape(60000, 28, 28, 1) # 데이터 내용 순서 변화 없다
 # x_test = x_test.reshape(10000, 28, 28, 1) # 데이터 내용 순서 변화 없다
 # print(x_train.shape[0]) # 60000
 
 x_test = x_test.reshape(x_test.shape[0], x_test.shape[1], x_test.shape[2], 1) # 데이터 내용 순서 변화 없다
-print(x_train.shape, x_test.shape)  # (60000, 28, 28, 1) (10000, 28, 28, 1)
 x_train = x_train.reshape(x_train.shape[0], x_train.shape[1], x_train.shape[2], 1)
+print(x_train.shape, x_test.shape)  # (60000, 28, 28, 1) (10000, 28, 28, 1)
 
 ohe = OneHotEncoder(sparse = False)
 y_train = ohe.fit_transform(y_train.reshape(-1, 1))
@@ -31,8 +31,8 @@ y_test = ohe.fit_transform(y_test.reshape(-1, 1))
 
 
 #2. 모델
-model = Sequential()
-model.add(Conv2D(9, (2,2), 
+model = Sequential()        # convolution 필터당 특징맵(feature map)이 나온다.
+model.add(Conv2D(9, (2,2),  # convolution 특정한 패턴의 특징이 어디서 나타나는지를 확인하는 도구 // 9개의 특징맵 = 9채널의 특징맵
                  strides=1,
                  input_shape=(28, 28, 1),
                  padding='same',))
@@ -40,7 +40,7 @@ model.add(Conv2D(9, (2,2),
                         # 모양 같이 하고 싶으면 padding : 'same'쓴다. 'valid'은 디폴트
                         # shape = (batch_size, rows, colums, channels) // 배치 디폴트 32
                         # shape = (batch_size, heights, widths, channels)
-model.add(Conv2D(filters=10, kernel_size=(3,3),padding='same'))    # 4차원을 받아야함
+model.add(Conv2D(filters=10, kernel_size=(3,3),padding='same'))    # 4차원을 받아야함 // 10개의 특징맵 = 10채널의 특징맵
 model.add(Conv2D(15, (4,4), padding='same') )
 model.add(Flatten())    # 입력 데이터를 1차원으로 평탄화. 2D 혹은 3D의 특징 맵(feature map)을 1D 벡터로 변환, 이후의 레이어에서 처리하기 쉽게 만들어주는 역할 // reshape랑 동일 개념
 model.add(Dense(units=8)) # 주로 2차원 받음 
@@ -72,9 +72,12 @@ f1 = f1_score(arg_test, arg_pre, average='macro')
 print("f1 : ", f1)
 
 
-import matplotlib.pyplot as plt # 이미지 볼때,,
-plt.imshow(x_train[1], 'PuBu')
-plt.show()
+# import matplotlib.pyplot as plt # 이미지 볼때,,
+# plt.imshow(x_train[1], 'PuBu')
+# plt.show()
+
+print(pd.DataFrame(y_predict).round(2))
+print(pd.DataFrame(y_test).round(2))
 
 
 # loss 0.3599582314491272

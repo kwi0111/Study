@@ -6,7 +6,8 @@ from keras.layers import Dense, Conv2D, Flatten, MaxPooling2D, Dropout
 from sklearn.preprocessing import OneHotEncoder
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 
-
+# 3차원 형태(32, 32, 3), 3072차원 공간의 한점
+#1.데이터
 (x_train, y_train), (x_test, y_test) = cifar10.load_data()
 
 print(x_train.shape, y_train.shape) # (50000, 32, 32, 3) (50000, 1)

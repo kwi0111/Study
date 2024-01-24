@@ -27,29 +27,32 @@ test_datagen = ImageDataGenerator(
 )
 # predict에서 문제집 변경 x // 스케일링은 해야함 //
 
-path_train = 'c:/_data/cat_and_dog//Train/'
-# path_test = 'c:/_data/cat_and_dog//Test/'
+path_train = 'c:/_data/image/brain/train/'
+path_test = 'c:/_data/image/brain/test/'
 
 xy_train = train_datagen.flow_from_directory(  
 # DirectoryIterator 여기서 x는 (배치 크기, *표적 크기, 채널)의 형태의 이미지 배치로 구성된 numpy 배열이고 y는 그에 대응하는 라벨로 이루어진 numpy 배열
     path_train,
-    target_size=(80, 80),     
-    batch_size=5000,         # 몇장씩 수치화 할거냐     
+    target_size=(100, 100),     
+    batch_size=10,         # 몇장씩 수치화 할거냐     
     class_mode='binary',
+    color_mode='grayscale',
     shuffle=True,
 )   # Found 160 images belonging to 2 classes.
 
 # 2 classes : ad, nomal
 # <keras.preprocessing.image.DirectoryIterator object at 0x0000020E66130670> 반복자 // x와 y가 합쳐져있는 형태
 
-# xy_test = test_datagen.flow_from_directory(       # 수치화
-#     path_test,
-#     target_size=(200, 200), 
-#     batch_size=1000,
-#     class_mode='binary',
-#     # shuffle=True,
-# ) 
-
+xy_test = test_datagen.flow_from_directory(       # 수치화
+    path_test,
+    target_size=(100, 100), 
+    batch_size=10,
+    class_mode='binary',
+    color_mode='grayscale',
+    shuffle=True,
+) 
+# Found 160 images belonging to 2 classes.
+# Found 120 images belonging to 2 classes.
 # print(xy_test)
 
 # <keras.preprocessing.image.DirectoryIterator object at 0x0000021E27B8F580> 반복자 // x와 y가 합쳐져있는 형태
@@ -66,7 +69,9 @@ xy_train = train_datagen.flow_from_directory(
 # print(type(xy_train[0][0]))    # <class 'numpy.ndarray'>
 # print(type(xy_train[0][1].shape))    # <class 'numpy.ndarray'>
 
-# print(xy_train[0][0].shape)   # (1000, 200, 200, 3)
+print(xy_train[0][0].shape)   # (160, 100, 100, 1)
+print(xy_train[0][1].shape)   # (160,)
+
 # print(xy_test[0][0].shape)   # (120, 200, 200, 3)
 
 # print(xy_train[0][0])   # x_train (1000, 200, 200, 3)
@@ -98,14 +103,14 @@ y = np.reshape(y, (-1,1))
 
 # print(x.shape, y.shape) # (19997, 100, 100, 3) (19997, 1)
 
-x_train, x_test, y_train, y_test = train_test_split(
-                                                    x,
-                                                    y,             
-                                                    train_size=0.86,
-                                                    random_state=2024,
-                                                    shuffle=True,
-                                                    stratify=y
-                                                    )
+# x_train, x_test, y_train, y_test = train_test_split(
+#                                                     x,
+#                                                     y,             
+#                                                     train_size=0.86,
+#                                                     random_state=2024,
+#                                                     shuffle=True,
+#                                                     stratify=y
+#                                                     )
 
 
 # print(x.shape, y.shape) ###
@@ -139,7 +144,7 @@ x_train, x_test, y_train, y_test = train_test_split(
 
 #2. 모델
 model = Sequential()
-model.add(Conv2D(88, (2,2), padding='same', strides=1, input_shape = (80,80,3), activation='relu'))
+model.add(Conv2D(88, (2,2), padding='same', strides=1, input_shape = (100,100,1), activation='relu'))
 model.add(MaxPooling2D())
 model.add(Dropout(0.2))
 # model.add(Conv2D(32, (2,2), padding='same', activation='relu' ))
@@ -159,16 +164,25 @@ es = EarlyStopping(monitor='acc',
                 restore_best_weights=True
                 )
 # print(x_train.shape, y_train.shape)
-model.fit(x_train, y_train, epochs=500, batch_size=32, verbose=1, validation_split=0.2)
-
+model.fit(xy_train, epochs=10,
+                    steps_per_epoch=16, # 전체 데이터 / batch = 160 / 10 = 16 /// 17이면 에러, 15면 나머지 소실
+                    # batch_size=32,    # fit_generator에서는 에러, fit에서는 안먹힘.
+                    verbose=1,
+                    # validation_split=0.2, # 에러 
+                    validation_data=xy_test,
+                    )
+#  UserWarning: `Model.fit_generator` is deprecated and will be removed in a future version. 
+#  Please use `Model.fit`, which supports generators.
 #4 평가, 예측
-results = model.evaluate(x_test, y_test)
+results = model.evaluate(xy_test)   # 사람이 평가
 print('loss', results[0])
 print('acc', results[1])
 # print("걸린시간 : ", round(end - start, 2),"초")
 
 
+'''
 
+텐서플로우 3번 문제
 # loss 0.6632859706878662
 # acc 0.8082143068313599
 
@@ -176,4 +190,4 @@ print('acc', results[1])
 
 
 
-
+'''
