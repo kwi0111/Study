@@ -19,10 +19,10 @@ print(img) # <PIL.Image.Image image mode=RGB size=150x150 at 0x1E66E278BB0>
 print(type(img))    # <class 'PIL.Image.Image'>
 # plt.imshow(img)
 # plt.show()
-
 arr = img_to_array(img)
 print(arr)
 print(arr.shape)    # (281, 300, 3) -> (150, 150, 3)
+
 print(type(arr))    # <class 'numpy.ndarray'>
 
 # 차원증가  // reshape로 해도됨
