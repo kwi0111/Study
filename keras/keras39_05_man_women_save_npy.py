@@ -33,7 +33,7 @@ path_test = 'c:/_data/kaggle/man_women/test/'
 xy_train = train_datagen.flow_from_directory(  
 # DirectoryIterator 여기서 x는 (배치 크기, *표적 크기, 채널)의 형태의 이미지 배치로 구성된 numpy 배열이고 y는 그에 대응하는 라벨로 이루어진 numpy 배열
     path_train,
-    target_size=(120, 120),     
+    target_size=(200, 200),     
     batch_size=20000,         # 몇장씩 수치화 할거냐     
     class_mode='binary',
     # color_mode='grayscale',
@@ -42,7 +42,7 @@ xy_train = train_datagen.flow_from_directory(
 
 xy_test = test_datagen.flow_from_directory(
     path_test,
-    target_size=(120, 120), 
+    target_size=(200, 200), 
     batch_size=5000,
     class_mode='binary',
     # color_mode='grayscale',
