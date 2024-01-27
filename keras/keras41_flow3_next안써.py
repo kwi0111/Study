@@ -29,7 +29,7 @@ x_data = train_datagen.flow(    # flow에 원래 x,y 들어감
     np.zeros(augumet_size),                                              # y // 구색 맞춤이다.
     batch_size=100,
     shuffle=True
-    ) #.next().next()    # 0번째 껏만 출력 x데이터에
+    ) # .next()    # 0번째 껏만 출력 x데이터에
 
 # print(x_data)
 # print(x_data.shape) # 'tuple' object has no attribute 'shape' 
