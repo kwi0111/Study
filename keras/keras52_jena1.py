@@ -12,7 +12,7 @@ path = "c://_data//kaggle//jena//"
 
 dataset = pd.read_csv(path + 'jena_climate_2009_2016.csv', index_col=0)
 
-size = 4
+size = 360
 def split_xy(dataset, size, y_col):     
     result_x = []
     result_y = []
@@ -25,7 +25,7 @@ def split_xy(dataset, size, y_col):
 x, y = split_xy(dataset, size, 'T (degC)')
 print(x)
 print(y)
-print(x.shape, y.shape) # (420547, 4, 14) (420547,)
+print(x.shape, y.shape) # (420547, 360, 14) (420547,)
 
 
 x_train, x_test, y_train, y_test = train_test_split(
@@ -48,7 +48,7 @@ print(x_test.shape, y_test.shape)  # (42055, 4, 14) (42055,)
 
 #2. 모델 구성
 model = Sequential()
-model.add(LSTM(100, input_shape = (4,14))) 
+model.add(LSTM(100, input_shape = (36,14))) 
 model.add(Dense(100, activation='relu'))
 model.add(Dense(10, activation='relu'))
 model.add(Dense(100, activation='relu'))
@@ -62,7 +62,7 @@ es = EarlyStopping(monitor='val_loss',
                    verbose=1,
                    restore_best_weights=True,
                    )
-model.fit(x_train, y_train, epochs=1000, batch_size=3024, verbose=1, callbacks=[es], validation_split=0.2)
+model.fit(x_train, y_train, epochs=1000, batch_size=2024, verbose=1, callbacks=[es], validation_split=0.2)
 
 #4. 평가, 예측
 results = model.evaluate(x_test, y_test)
@@ -73,9 +73,9 @@ print(y_test.shape, y_predict.shape)
 r2_y_predict = r2_score(y_test, y_predict)
 print('R2 : ', r2_y_predict)
 
-# loss :  0.127421572804451
-# (84110,) (84110, 1)
-# R2 :  0.9982194176382211
+# loss :  0.15373285114765167
+# (84103,) (84103, 1)
+# R2 :  0.9978336143770719
 
 
 # def split_x(dataset, size):     

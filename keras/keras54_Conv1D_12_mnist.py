@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from keras.datasets import mnist
 from keras.models import Sequential, Model
-from keras.layers import Dense, Conv2D, Flatten ,Input, Dropout, LSTM
+from keras.layers import Dense, Conv2D, Flatten ,Input, Dropout, LSTM, Conv1D
 from sklearn.preprocessing import OneHotEncoder, MinMaxScaler, StandardScaler
 from keras.callbacks import EarlyStopping
 
@@ -60,12 +60,13 @@ y_test = ohe.fit_transform(y_test.reshape(-1, 1))
 
 #2. 모델 구성
 model = Sequential()
-model.add(LSTM(100, return_sequences=True, input_shape = (28*28, 1))) 
-model.add(LSTM(30))    
-model.add(Dense(100))
-model.add(Dense(10))
-model.add(Dense(100))
-model.add(Dense(10, activation='softmax'))
+model.add(Conv1D(7, 2, padding='same', input_shape = (28*28,1)))
+model.add(Conv1D(10, 2, padding='same', activation='relu'))
+model.add(Flatten())
+model.add(Dense(100, activation='relu'))
+model.add(Dense(10, activation='relu'))
+model.add(Dense(100, activation='relu'))
+model.add(Dense(10, activation='softmax')) 
 
  
 
@@ -105,6 +106,9 @@ acc 0.9259999990463257
 loss 0.3497140109539032
 acc 0.9266999959945679
 
+Conv1D
+loss 0.9609095454216003
+acc 0.9732999801635742
 '''
 
 
