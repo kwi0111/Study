@@ -38,8 +38,9 @@ output11 = Dense(5, activation='relu', name='bit14')(dense13)    # 시작
 # model = Model(inputs=input11, outputs=output11)
 # model.summary()
 
-#2-3. concatnate 사슬처럼 엮다.
-merge1 = concatenate([output1, output11], name='mg1')
+#2-3. concatnate(함수) 사슬처럼 엮다. // Concatnate(클래스)()괄호 사용
+# merge1 = concatenate([output1, output11], name='mg1')
+merge1 = Concatenate(name='mg1')([output1, output11])
 merge2 = Dense(7, name='mg2')(merge1)
 merge3 = Dense(11, name='mg3')(merge2)
 last_output = Dense(1, name='last')(merge3) # 끝

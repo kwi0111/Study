@@ -129,6 +129,8 @@ y = y.reshape(-1, 1)
 print(y.shape)  # (178, 1)
 ohe = OneHotEncoder(sparse=True)
 y = ohe.fit_transform(y).toarray()  # toarray : 넘파이 배열로 변환하는 메서드
+> fit() : 어떻게 변환할 것인지에 대해 학습
+> transform() : 문자열을 숫자로 변환
 print(y)
 print(y.shape)  # (178, 3)
 
