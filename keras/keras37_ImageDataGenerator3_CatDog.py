@@ -47,14 +47,15 @@ xy_train = train_datagen.flow_from_directory(
 #     target_size=(200, 200), 
 #     batch_size=1000,
 #     class_mode='binary',
-#     # shuffle=True,
+#     shuffle=True,
 # ) 
+# print(xy_train[0])  # array([0., 0., 0., 0., 1., 1., 1., 1., 1., 0.] = y값
 
 # print(xy_test)
+'''
 
 # <keras.preprocessing.image.DirectoryIterator object at 0x0000021E27B8F580> 반복자 // x와 y가 합쳐져있는 형태
 # print(xy_train.next())    # 첫번째 값.
-# print(xy_train[0])  # array([0., 0., 0., 0., 1., 1., 1., 1., 1., 0.] = y값
 
 # print(xy_train[0][0])   # 첫번째 배치의 x
 # print(xy_train[0][1])   # 첫번째 배치의 y
@@ -171,7 +172,7 @@ print('acc', results[1])
 
 # loss 0.6632859706878662
 # acc 0.8082143068313599
-
+'''
 
 
 

@@ -38,41 +38,51 @@ x_test = x_test.reshape(-1, 28, 28, 1)
 # x_train = scaler.fit_transform(x_train)
 # x_test = scaler.transform(x_test)
 
-
+# 라벨값 reshape해줘야함.
 ohe = OneHotEncoder()
 y_train = ohe.fit_transform(y_train.reshape(-1,1)).toarray()
 y_test = ohe.transform(y_test.reshape(-1,1)).toarray()
 print(y_train.shape, y_test.shape)  # (60000, 10) (10000, 10)
 
+# y_train = y_train.reshape(-1,1)
+# y_test = y_test.reshape(-1,1)
+
+# ohe = OneHotEncoder(sparse=False)
+# y_train = ohe.fit_transform(y_train)#.toarray()
+# y_test = ohe.transform(y_test)#.toarray()
+# print(y_train.shape, y_test.shape)  # (60000, 10) (10000, 10)
+
+
+
 # x_train = x_train.astype(np.float32)/255.0
 # x_test = x_test.astype(np.float32)/255.0
 
-#2. 모델 구성
-input1 = Input(shape=(28, 28, 1))
-Conv2D1 = Conv2D(10, (1,1), padding='same', activation="relu")(input1)
-Conv2D2 = Conv2D(10, (1,1), padding='same')(Conv2D1)
-drop1 = Dropout(0.2)(Conv2D2)
-Flatten1 = Flatten()(drop1)
-output1 = Dense(10, activation='softmax')(Flatten1)
-model = Model(inputs = input1, outputs = output1) 
+# #2. 모델 구성
+# input1 = Input(shape=(28, 28, 1))
+# Conv2D1 = Conv2D(10, (1,1), padding='same', activation="relu")(input1)
+# Conv2D2 = Conv2D(10, (1,1), padding='same')(Conv2D1)
+# drop1 = Dropout(0.2)(Conv2D2)
+# Flatten1 = Flatten()(drop1)
+# output1 = Dense(10, activation='softmax')(Flatten1)
+# model = Model(inputs = input1, outputs = output1) 
 
-print(model.summary())
+# print(model.summary())
 
-#3. 컴파일, 훈련
-model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['acc'])
-es = EarlyStopping(monitor='val_loss',
-                   mode='auto',
-                   patience=15,
-                   verbose=1,
-                   restore_best_weights=True,
-                   )
-model.fit(x_train, y_train, epochs=300, batch_size=128, verbose=1, validation_split=0.2, callbacks=[es])
+# #3. 컴파일, 훈련
+# model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['acc'])
+# es = EarlyStopping(monitor='val_loss',
+#                    mode='auto',
+#                    patience=15,
+#                    verbose=1,
+#                    restore_best_weights=True,
+#                    )
+# model.fit(x_train, y_train, epochs=300, batch_size=128, verbose=1, validation_split=0.2, callbacks=[es])
 
-#4. 평가, 예측
-results = model.evaluate(x_test, y_test)
-y_predict = model.predict(x_test)
-print("loss : ", results[0])
-print("acc : ", results[1])
+# #4. 평가, 예측
+# results = model.evaluate(x_test, y_test)
+# y_predict = model.predict(x_test)
+# print("loss : ", results[0])
+# print("acc : ", results[1])
 
 '''
 배치 128

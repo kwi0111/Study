@@ -34,7 +34,7 @@ xy_train = train_datagen.flow_from_directory(
 # DirectoryIterator 여기서 x는 (배치 크기, *표적 크기, 채널)의 형태의 이미지 배치로 구성된 numpy 배열이고 y는 그에 대응하는 라벨로 이루어진 numpy 배열
     path_train,
     target_size=(100, 100),     
-    batch_size=200,         # 몇장씩 수치화 할거냐     
+    batch_size=200,         # 몇장씩 수치화 할거냐 // 통배치
     class_mode='binary',
     color_mode='grayscale',
     shuffle=True,
@@ -44,15 +44,15 @@ xy_train = train_datagen.flow_from_directory(
 xy_test = test_datagen.flow_from_directory(       # 수치화
     path_test,
     target_size=(100, 100), 
-    batch_size=200,
+    batch_size=200,                                # 통배치
     class_mode='binary',
     color_mode='grayscale',
     shuffle=True,
 ) 
 # Found 160 images belonging to 2 classes.
 
-print(xy_train[0][0].shape)   # (160, 100, 100, 1)
-print(xy_train[0][1].shape)   # (160,)
+print(xy_train[0][0].shape)   # x값 (160, 100, 100, 1) 
+print(xy_train[0][1].shape)   # y값 (160,)
 
 print(xy_test[0][0].shape)   # (120, 100, 100, 1)
 print(xy_test[0][1].shape)   # (120,)

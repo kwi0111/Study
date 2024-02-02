@@ -101,10 +101,10 @@ scaler = StandardScaler() # 클래스 정의
 # scaler = MaxAbsScaler() # 클래스 정의
 # scaler = RobustScaler() # 클래스 정의
 
-
-scaler.fit(x_train)
+                    
+scaler.fit(x_train) # 스케일러 기준은 이 녀석 
 x_train = scaler.transform(x_train)
-x_test = scaler.transform(x_test)
+x_test = scaler.transform(x_test)   
 test_csv = scaler.transform(test_csv)
 
 x_train = x_train.reshape(-1, 12, 1, 1)

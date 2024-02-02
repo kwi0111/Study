@@ -26,7 +26,7 @@ print(arr)
 print(arr.shape)    # (281, 300, 3) -> (150, 150, 3)
 print(type(arr))    # <class 'numpy.ndarray'>
 
-# 차원증가  // reshape로 해도됨
+# 차원 증가  // reshape로 해도됨
 img = np.expand_dims(arr, axis=1)
 print(img.shape)    # axis 0일때 (1, 150, 150, 3), axis 1일때 (150, 1, 150, 3)
 

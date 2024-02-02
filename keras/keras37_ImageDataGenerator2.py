@@ -54,11 +54,15 @@ xy_test = test_datagen.flow_from_directory(       # 수치화
     class_mode='binary',
     # shuffle=True,
 ) 
-
-print(xy_test)
+# print(xy_test)
 # <keras.preprocessing.image.DirectoryIterator object at 0x0000020E66130670> 반복자 // x와 y가 합쳐져있는 형태
-print(xy_train.next())
-# print(xy_train[0])  # array([0., 0., 0., 0., 1., 1., 1., 1., 1., 0.] = y값
+# print(xy_train.next())
+print(xy_train[0])  # array([0., 0., 0., 0., 1., 1., 1., 1., 1., 0.] = y값
+print(xy_test[0])  # array([0., 0., 0., 0., 1., 1., 1., 1., 1., 0.] = y값
+
+# print(len(xy_train))  # array([0., 0., 0., 0., 1., 1., 1., 1., 1., 0.] = y값
+
+'''
 # print(xy_train[16])  # 에러 :: 전체 데이터 / batch_size = 160/10 = 16개인데
                      # [16]은 17번째 값을 빼라고 하니 에러가 난다.
 
@@ -151,6 +155,6 @@ print('acc', results[1])
 # loss 0.15552547574043274
 # acc 0.9583333134651184
 
-
+'''
 
 

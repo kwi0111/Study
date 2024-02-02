@@ -38,7 +38,7 @@ xy_train = train_datagen.flow_from_directory(
     class_mode='binary',
     color_mode='grayscale',
     shuffle=True,
-)   # Found 160 images belonging to 2 classes.
+)#.next()   # Found 160 images belonging to 2 classes.
 
 # 2 classes : ad, nomal
 # <keras.preprocessing.image.DirectoryIterator object at 0x0000020E66130670> 반복자 // x와 y가 합쳐져있는 형태
@@ -50,19 +50,51 @@ xy_test = test_datagen.flow_from_directory(       # 수치화
     class_mode='binary',
     color_mode='grayscale',
     shuffle=True,
-) 
+)#.next()
+print(type(xy_test.next()[1]))
+print(type(xy_test))
 # Found 160 images belonging to 2 classes.
 # Found 120 images belonging to 2 classes.
 # print(xy_test)
-
 # <keras.preprocessing.image.DirectoryIterator object at 0x0000021E27B8F580> 반복자 // x와 y가 합쳐져있는 형태
-# print(xy_train.next())    # 첫번째 값.
-# print(xy_train[0])  # array([0., 0., 0., 0., 1., 1., 1., 1., 1., 0.] = y값
+# print(xy_test.next())    # 첫번째 값.
+# print(xy_test[0])  # array([0., 0., 0., 0., 1., 1., 1., 1., 1., 0.] = y값
+print(xy_train[0][0][1])  # array([1., 0., 1., 0., 0., 0., 0., 1., 0., 0.]
+# print(xy_train[0][0])  # [1. 1. 0. 1. 0. 0. 1. 0. 0. 0.] = y값
+print("="*100)
+'''
+next() [0][0]
+    첫번째값에서 0은 x, 1은 y
+    두번째값부터는 데이터
+next() 안쓰면 [0][0][0]
 
+[[0. 1.]
+ [0. 1.]
+ [1. 0.]
+ [0. 1.]
+ [0. 1.]
+ [0. 1.]
+ [0. 1.]
+ [1. 0.]
+ [0. 1.]
+ [0. 1.]]
+ 
+ [[0. 1.]
+ [0. 1.]
+ [1. 0.]
+ [0. 1.]
+ [0. 1.]
+ [0. 1.]
+ [0. 1.]
+ [1. 0.]
+ [0. 1.]
+ [0. 1.]]
+'''
 # print(xy_train[0][0])   # 첫번째 배치의 x
-# print(xy_train[0][1])   # 첫번째 배치의 y
-# print(xy_train[0][0].shape)   # (000, 200, 200, 3)
-
+# print(xy_train[0][0][1])   # 첫번째 배치의 y
+print(xy_train[0][0].shape)   # (000, 200, 200, 3)
+print(xy_train[0][1].shape)
+'''
 
 # print(type(xy_train))   # <class 'keras.preprocessing.image.DirectoryIterator'>
 # print(type(xy_train[0]))    # <class 'tuple'>
@@ -178,7 +210,7 @@ results = model.evaluate(xy_test)   # 사람이 평가
 print('loss', results[0])
 print('acc', results[1])
 # print("걸린시간 : ", round(end - start, 2),"초")
-
+'''
 
 '''
 

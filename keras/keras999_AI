@@ -274,8 +274,6 @@ filepath = "".join([path, 'k25_', date, '_', filename])  # ""은 더하기 개�
 
 
 
-
-
 DNN (Deep Neural Network):
 개념: DNN은 입력 레이어, 은닉 레이어(여러 층 포함), 출력 레이어로 구성된 인공신경망 구조. 각 뉴런은 입력과 가중치를 곱하고 활성화 함수를 통과시켜 출력을 생성.
 특징:
@@ -338,19 +336,45 @@ Convolution layer의 입력 데이터가 필터를 통과하며 합성곱을 통
 Activation map은 Feature map 행렬에 활성화함수를 적용한 최종 출력 결과를 말함
 
 
-
-
+########## 스케일링 1-1 ############# 
+이미지 데이터의 픽셀 값은 일반적으로 0부터 255까지의 값을 가진다. 
+이 값을 255로 나누면 픽셀 값이 0에서 1 사이의 범위로 스케일링되게 된다.
+x_train = x_train/255.
+x_test = x_test/255.
 
 x_train = x_train.astype(np.float32)/255.0
 x_test = x_test.astype(np.float32)/255.0
-이미지 데이터의 픽셀 값은 일반적으로 0부터 255까지의 값을 가진다. 
-이 값을 255로 나누면 픽셀 값이 0에서 1 사이의 범위로 스케일링되게 된다.
+
+########## 스케일링 1-2 ############# 
+x_train = (x_train-127.5)/127.5
+x_test = (x_test-127.5)/127.5
+
+########## 스케일링 2-1 #############
+x_train = x_train.reshape(60000, 28*28)
+x_test = x_test.reshape(10000, 28*28)
+
+scaler = MinMaxScaler()
+x_train = scaler.fit_transform(x_train)
+x_test = scaler.transform(x_test)
+# 스케일러는 2차원에서만 쓸수있다.
+x_train = x_train.reshape(-1, 28, 28, 1)
+x_test = x_test.reshape(-1, 28, 28, 1)
+# 스케일링 하고 다시 변환
+
 
 ImageDataGenerator # 이미지를 0~255의 값으로 정규화된 배열로 변환 // 이미지 숫자로 바꿔줌 (컴퓨터가 알아먹을수있게) // 데이터 수치화, 변환하는 도구
+test_datagen = ImageDataGenerator(
+    rescale=1./255)
+# 트레인 데이터는 훈련을 해야하지만 테스트 데이터는 그대로 검증해야함. // 스케일링은 해줘야 그대로 비교
 
 xy_train = train_datagen.flow_from_directory
 # DirectoryIterator 여기서 x는 (배치 크기, *표적 크기, 채널)의 형태의 이미지 배치로 구성된 numpy 배열이고 y는 그에 대응하는 라벨로 이루어진 numpy 배열
-# x와 y가 합쳐져있는 형태
+# x와 y가 합쳐져있는 형태 (수치화)
+
+
+
+
+
 
 
 
@@ -396,7 +420,7 @@ Embedding은 자연어 처리에서 주어진 텍스트 데이터를 특정 차�
 임베딩 벡터는 주어진 텍스트의 의미와 관련된 정보를 보존하도록 학습
 
 input_dim: 입력 데이터의 크기를 지정(단어 집합의 크기)
-output_dim: 벡터의 차원을 지정(차원에서 기울기를 기준으로 분리) 
+output_dim: 벡터의 차원을 지정(차원에서 기울기를 기준으로 분리) .0.
 input_length: 입력 시퀀스의 길이를 지정. 이 매개변수는 Embedding 레이어 이전에 Flatten 레이어나 RNN 레이어 등과 같은 레이어에 입력될 때 유용
 
 
