@@ -52,22 +52,25 @@ merge1 = concatenate([output1, output11, output111], name='mg1')
 merge2 = Dense(7, name='mg2')(merge1)
 merge3 = Dense(11, name='mg3')(merge2)
 last_output1 = Dense(1, name='last1')(merge3) 
-last_output2 = Dense(1, name='last2')(merge3)
+last_output2 = Dense(1, name='last2')(merge3)     # 굳이 merge3으로만 받을 필요는 없다. // merge1, 5, 10 등등 다르게 할수있다
 
 model = Model(inputs = [input1, input11, input111], outputs = [last_output1, last_output2])
 
-model.summary() # 전체 데이터 갯수 맞춰줘야한다.
+print(y2_train[0])
+print(y1_train[0])
 
-#3. 컴파일, 훈련
-model.compile(loss='mse', optimizer='adam')
-model.fit([x1_train, x2_train, x3_train], [y1_train, y2_train], epochs=300, batch_size=2, verbose=1)
+# model.summary() # 전체 데이터 갯수 맞춰줘야한다.
 
-#4. 평가 및 예측
-results = model.evaluate([x1_test, x2_test, x3_test], [y1_test, y2_test])
-y_predict = model.predict([x1_test, x2_test, x3_test])
-print("loss통합 : ", results[0])
-print("x1_test, x2_test, x3_test, y1_test : ", results[1])
-print("x1_test, x2_test, x3_test, y2_test : ", results[2])
+# #3. 컴파일, 훈련
+# model.compile(loss='mse', optimizer='adam')
+# model.fit([x1_train, x2_train, x3_train], [y1_train, y2_train], epochs=300, batch_size=2, verbose=1)
+
+# #4. 평가 및 예측
+# results = model.evaluate([x1_test, x2_test, x3_test], [y1_test, y2_test])
+# y_predict = model.predict([x1_test, x2_test, x3_test])
+# print("loss통합 : ", results[0])
+# print("x1_test, x2_test, x3_test, y1_test : ", results[1])
+# print("x1_test, x2_test, x3_test, y2_test : ", results[2])
 
 
 

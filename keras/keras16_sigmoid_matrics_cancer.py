@@ -23,7 +23,7 @@ print(pd.DataFrame(y).value_counts())
 print(pd.Series(y).value_counts())
 print(pd.value_counts(y))                     # 행렬 데이터 일때 // mse로는 0과 1을 찾을수 없다. // 
 
-'''
+
 # # 넘파이 0과 1의 갯수가 몇개인지 찾아라.
 # unique, counts = np.unique(y, return_counts=True)
 # print(unique, counts)    # [0 1] [212 357]
@@ -75,7 +75,7 @@ hist = model.fit(x_train, y_train, epochs=800, batch_size=12,
 #4. 평가, 예측
 loss = model.evaluate(x_test, y_test) 
 y_predict = model.predict(x_test)
-y_predict = y_predict.round()
+y_predict = y_predict.round() # 기존 x_test값에서 sigmoid를 썼으니 0~1사이의 값을 predict 했으니 round 처리를 해준다.
 
 from sklearn.metrics import r2_score, mean_squared_error, accuracy_score
 r2 = r2_score(y_test, y_predict)    # (실제값, 예측값)
@@ -91,7 +91,7 @@ print("ACC : " , acc)
 print("로스, 정확도 : ", loss)
 print("r2 스코어 : " , r2)  # r2 조금 못미더움 // 정확도는 predict에 대한 결과
 
-'''
+
 # 로스, 정확도 :  [0.06485937535762787, 0.9824561476707458]
 # r2 스코어 :  0.9397867375545318
 

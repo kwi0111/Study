@@ -24,11 +24,13 @@ x_test = x_test.reshape(x_test.shape[0], x_test.shape[1], x_test.shape[2], 1) # 
 print(x_train.shape, x_test.shape)  # (60000, 28, 28, 1) (10000, 28, 28, 1)
 x_train = x_train.reshape(x_train.shape[0], x_train.shape[1], x_train.shape[2], 1)
 
+print(y_train[0])
 ohe = OneHotEncoder(sparse = False)
 y_train = ohe.fit_transform(y_train.reshape(-1, 1))
 y_test = ohe.fit_transform(y_test.reshape(-1, 1))
 
-
+print(y_train[0])
+'''
 #2. 모델
 model = Sequential()
 model.add(Conv2D(9, (2,2), input_shape=(28, 28, 1))) 
@@ -45,7 +47,6 @@ model.add(Dense(10, activation='softmax'))
 
 
 print(model.summary())
-'''
 (kenel_size * channels + bias) * filters = 
 
  

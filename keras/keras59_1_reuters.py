@@ -68,10 +68,10 @@ from keras.callbacks import EarlyStopping
 model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['acc'])
 es = EarlyStopping(monitor='val_loss',
                    mode='auto',
-                   patience=15,
+                   patience=30,
                    verbose=1,
                    restore_best_weights=True)
-model.fit(x_train, y_train, epochs=100, batch_size=20, verbose=1, validation_split=0.2, callbacks=[es])
+model.fit(x_train, y_train, epochs=300, batch_size=20, verbose=1, validation_split=0.2, callbacks=[es])
 
 #4. 평가 및 예측
 results = model.evaluate(x_test, y_test)
@@ -81,7 +81,10 @@ print("acc : ", results[1])
 # print(y_predict[0])
 # print(x_train[0])
 # print(y_train[0])
+
 '''
- loss :  1.4351187944412231
+
+loss :  1.4351187944412231
 acc :  0.6406945586204529
+
 '''

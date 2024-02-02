@@ -26,9 +26,11 @@ print(x.shape, y.shape) # (13, 3) (13,)
 x = x.reshape(-1,3,1)
 print(x.shape, y.shape) # (13, 3, 1) (13,)
 
-#2. 모델구성
+#2. 모델구성   
+# return_sequences=True 모든 시점의 은닉 상태와 셀 상태를 리턴
+# ex ) return_sequences=False,  hidden state (1, 3) -> (1, 3)  // return_sequences=True, hidden state (1, 4, 3) -> (1, 3)
 model = Sequential()
-model.add(LSTM(100, return_sequences=True, input_shape = (3, 1), activation='sigmoid'))  #  2차원인데 밑에는 3차원을 받는다. 실행하려면 return_sequences=True
+model.add(LSTM(100, return_sequences=True, input_shape = (3, 1), activation='sigmoid'))  #  2차원인데 밑에는 3차원을 받는다. 실행하려면 return_sequences=True 
 model.add(LSTM(30, return_sequences=True, activation='sigmoid'))    # 두개 이상이라고해서 좋아진다는 보장 x
 model.add(LSTM(100, return_sequences=True, activation='sigmoid'))
 model.add(LSTM(10, activation='sigmoid'))

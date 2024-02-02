@@ -1,3 +1,23 @@
+y = wx +b
+    w1*x1 + w2*x2 + b (param = 3) // 인풋2개 아웃풋1개
+
+
+loss = x_test, y_test 차이
+optimizer = loss를 어떻게 줄일 것인가. / loss함수를 최소화하는 가중치를 찾아가는 과정에 대한 알고리즘
+
+
+
+
+
+
+
+
+
+
+
+# 행(데이터 추가), 열(칼럼, 특성, 속성, 차원)
+# 스칼라 = 열의 개수
+
 x = np.array([1, 2, 3]) # 1차원 배열 생성
 print(x.ndim) # 해당 배열의 차원 확인
 print(x.dtype)  # 데이터 타입을 확인
@@ -7,7 +27,7 @@ print(x.columns)    # 인덱스 칼럼 확인
 print(train_csv.isna().sum())           # 데이터 프레임 결측치 확인
 print(train_csv.info())         # Non-Null Count : 결측치가 아닌 데이터 갯수
 print(test_csv.info())          # 컬럼 이름, 결측을 제외한 값 카운트, 타입을 보여줌.
-print(train_csv.describe())  
+print(train_csv.describe())     # 데이터 프레임 컬럼별 카운트, 평균, 표준편차, 최소값, 4분위 수, 최대값을 보여줌.
 
 
 x = x.transpose() # ex) (2,10) -> (10,2)
@@ -71,6 +91,7 @@ y = train_csv['count']                      # train_csv에 있는 'count'열을 
 print(y)
 
 print(np.unique(y, return_counts=True)) # (array([3, 4, 5, 6, 7, 8, 9], dtype=int64), array([  26,  186, 1788, 2416,  924,  152,    5], dtype=int64))
+                                        # 라벨의 종류 별로 찾아줌 // 0과 1로 나눠져있다. // 0이 무엇인지 1이 무엇인지
 print(pd.value_counts(y))
 6    2416
 5    1788
@@ -80,16 +101,21 @@ print(pd.value_counts(y))
 3      26
 9       5
 
+unique, counts = np.unique(y, return_counts=True)
+print(pd.DataFrame(y).value_counts())
+print(pd.Series(y).value_counts())
 
 
------------------평가 지표-----------------
+
+############################### 평가 지표 ###############################
+
 from sklearn.metrics import r2_score
 r2 = r2_score(y_test, y_predict)    # 실제값, 예측값
 print("r2 스코어 : " , r2)
 
 r2_score는 회귀 모델의 성능을 측정하는 지표
 R²는 예측 모델이 주어진 데이터를 얼마나 잘 설명
-R² 값은 0에서 1 사이의 범위에 있으며, 높을수록 모델이 데이터를 더 잘 설명한다는 것을 나타낸다.
+R²값은 0에서 1 사이의 범위에 있으며, 높을수록 모델이 데이터를 더 잘 설명한다는 것을 나타낸다.
 
 f1 = f1_score(y_test, y_predict)
 F_score는 정밀도(precision)와 재현율(recall)의 조화평균으로 계산되는 지표
@@ -101,11 +127,16 @@ rmse = RMSE(y_test, y_predict)
 print("RMSE : ", rmse)  # rmse : 평균 제곱근 오차
 print("MSE : ", loss)   # mse : 평균 제곱 오차
 
+# sigmoid : 모든값 0~1로 한정, 0.5이상은 1, 0.5미만은 0으로 판단 // 회귀 모델은 보통 리니어(디폴트값) // 2진분류는 sigmoid에 binary_crossentropy
+# 시그모이드는 정수값이 아니기 때문에 반올림(round) 처리해서 예측값 
+
 loss = 'binary_crossentropy' -> 이진 분류때 씀 (sigmoid)
 loss = 'categorical_crossentropy' -> 다중 클래스 분류에서 주로 사용 (softmax)
+np.argmax 써서 정수값 만들어준다. 
 
 
 
+################################ 원핫 #####################################
 
 #1. 원핫엔코딩 keras 
 from keras.utils import to_categorical # 10진수를 2진수로 바꿔주는 함수
@@ -118,7 +149,6 @@ y_ohe = pd.get_dummies(y, dtype='int')
 print(y_ohe)
 print(y_ohe.shape)  # (178, 3)
 
-
 #3. 원핫엔코딩 사이킷런
 from sklearn.preprocessing import OneHotEncoder
 y = y.reshape(-1, 1)    
@@ -128,7 +158,7 @@ y = y.reshape(-1, 1)
 # : 행 자리에 -1, 그리고 열 위치에 임의의 정수가 있을 때 정수에 따라서 178개의 원소가 해당 열 개수만큼 자동으로 구조화
 print(y.shape)  # (178, 1)
 ohe = OneHotEncoder(sparse=True)
-y = ohe.fit_transform(y).toarray()  # toarray : 넘파이 배열로 변환하는 메서드
+y = ohe.fit_transform(y) #.toarray(): 넘파이 배열로 변환하는 메서드
 > fit() : 어떻게 변환할 것인지에 대해 학습
 > transform() : 문자열을 숫자로 변환
 print(y)
@@ -137,8 +167,31 @@ print(y.shape)  # (178, 3)
 [0, 1, 0]이 One-Hot 인코딩된 벡터라면 argmax를 사용하면
 두 번째 위치에 해당하는 인덱스 1이 반환
 
+reshape 이해
+print(y_train[0])   # 0
+print(y_train[1])   # 5
+ohe = OneHotEncoder(sparse = False)
+y_train = ohe.fit_transform(y_train.reshape(-1, 2))
+y_test = ohe.fit_transform(y_test.reshape(-1, 2))
+print(y_train[0])   # -1,1 일때 [0. 0. 0. 0. 0. 1. 0. 0. 0. 0.]
+print(y_train[1])   # -1,1 일때 [1. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
+print(y_train[0])   # -1,2 일때 [0. 0. 0. 0. 0. 1. 0. 0. 0. 0. 1. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
+print(y_train[1])   # -1,2 일때 [0. 0. 0. 0. 1. 0. 0. 0. 0. 0. 0. 1. 0. 0. 0. 0. 0. 0. 0. 0.]
 
-# 데이터 전처리
+
+
+
+
+
+
+
+
+
+
+
+
+################################ 데이터 전처리 ######################################
+
 train_csv['type'] = train_csv['type'].map({"white":1, "red":0}).astype(int)
 test_csv['type'] = test_csv['type'].replace({"white":1, "red":0}).astype(int)
 # map은 주로 시리즈에 적용, replace는 데이터프레임 또는 시리즈에 대해 전체적으로 적용
@@ -148,6 +201,11 @@ model = load_model('..\_data\_save\keras24_save_model.h5')
 model.save_weights("..\_data\_save\keras24_5_save_model2.h5")
 model.load_weights("..\_data\_save\keras24_5_save_model2.h5")   # 모델이 없어서 불러오든가 구성되어있어야한다.
 
+path = '../_data/_save/MCP/'  # 문자열로 저장
+filename = '{epoch:04d}-{val_loss:.4f}.hdf5'  # 히스토리로 반환 되는 놈들 // 훈련 횟수 - 발로스 // 04d : 4자리수 까지  // 04f : 소수 4번째 자리 까지 // ex) 1000-0.3333.hdf5
+filepath = "".join([path, 'k25_', date, '_', filename])  # ""은 더하기 개념 (path + date + filename)
+# ../_data/_save/MCP/k25_0117_1059_0001-0.3333.hdf5
+
 mcp = ModelCheckpoint(monitor='val_loss',
                       mode='auto',
                       verbose=1,
@@ -155,8 +213,6 @@ mcp = ModelCheckpoint(monitor='val_loss',
                       filepath='../_data/_save/MCP/keras25_MCP1.hdf5',
                       )
 # 검증 손실이 감소할 때만 모델이 저장, 과적합을 방지하고 최적의 모델 저장
-
-
 
 
 
@@ -171,7 +227,7 @@ transform 메서드를 통해 학습된 평균과 표준편차를 적용하여 �
 
 
 
-데이터 스케일링(Data Scaling)
+########################### 데이터 스케일링(Data Scaling) #################################
 
 1. StandardScaler
 feature 값의 평균=0, 표준편차=1로 조정해서 모든 특성이 같은 크기를 갖게 정규화 한다. 각 데이터가 평균에서 몇 표준편차만큼 떨어져있는지를 기준으로 삼게 된다. 평균을 제거하고 데이터를 단위 분산으로 조정하기 때문에 이상치가 있다면 평균과 표준편차에 영향을 미쳐 변환된 데이터의 확산은 매우 달라지게 된다.
@@ -189,6 +245,8 @@ feature 값의 평균=0, 표준편차=1로 조정해서 모든 특성이 같은 
 중앙값=0, IQR(1분위~3분위값)=1로 조정, 아웃라이어 영향을 최소화하며 정규분포보다 더 넓게 분포. 이상치에 강함.
 RobustScaler를 사용하면 모든 변수들이 같은 스케일을 갖게 되며, StandardScaler에 비해 스케일링 결과가 더 넓은 범위로 분포
 IQR = Q3 - Q1 : 즉, 25퍼센타일과 75퍼센타일의 값들을 다룬다.
+
+
 
 
 ModelCheckpoint()
@@ -215,6 +273,9 @@ filepath = "".join([path, 'k25_', date, '_', filename])  # ""은 더하기 개�
 # ../_data/_save/MCP/k25_0117_1059_0001-0.3333.hdf5
 
 
+
+
+
 DNN (Deep Neural Network):
 개념: DNN은 입력 레이어, 은닉 레이어(여러 층 포함), 출력 레이어로 구성된 인공신경망 구조. 각 뉴런은 입력과 가중치를 곱하고 활성화 함수를 통과시켜 출력을 생성.
 특징:
@@ -229,6 +290,21 @@ CNN (Convolutional Neural Network):
 (stride값만큼 filter를 이동시키면서 겹치는 부분의 각 원소값을 곱해서 모두 더한 값을 출력)
 출력 데이터 크기는 Filter 크기, Stride, Padding, Pooling으로 결정
 출력 데이터 채널 = Filter의 개수로 결정
+
+convolution layer : feature 추출
+# 맥스 풀링 : 특징은 유지하면서 데이터와 feature map의 사이즈를 줄임으로써 용량을 절약 // 필터 사이즈중 가장 큰값을 뽑음.
+# 패딩 : 이미지의 경계에 0을 채운다. / 합성곱 이후 본래 이미지가 유지
+# stride : 커널의 보폭
+
+#2. 모델
+# convolution 필터당 특징맵(feature map)이 나온다.
+# convolution 특정한 패턴의 특징이 어디서 나타나는지를 확인하는 도구 // 9개의 특징맵 = 9채널의 특징맵
+# shape = (batch_size, rows, colums, channels)
+# shape = (batch_size, heights, widths, channels)
+model.add(Conv2D(filters=10, kernel_size=(3,3),padding='same'))    # 4차원을 받아야함 // 10개의 특징맵 = 10채널의 특징맵
+model.add(Flatten())    # 입력 데이터를 1차원으로 평탄화. 2D 혹은 3D의 특징 맵(feature map)을 1D 벡터로 변환, 이후의 레이어에서 처리하기 쉽게 만들어주는 역할 // reshape랑 동일 개념
+
+
 
 #2. 모델
 model = Sequential()
@@ -262,6 +338,9 @@ Convolution layer의 입력 데이터가 필터를 통과하며 합성곱을 통
 Activation map은 Feature map 행렬에 활성화함수를 적용한 최종 출력 결과를 말함
 
 
+
+
+
 x_train = x_train.astype(np.float32)/255.0
 x_test = x_test.astype(np.float32)/255.0
 이미지 데이터의 픽셀 값은 일반적으로 0부터 255까지의 값을 가진다. 
@@ -272,6 +351,100 @@ ImageDataGenerator # 이미지를 0~255의 값으로 정규화된 배열로 변�
 xy_train = train_datagen.flow_from_directory
 # DirectoryIterator 여기서 x는 (배치 크기, *표적 크기, 채널)의 형태의 이미지 배치로 구성된 numpy 배열이고 y는 그에 대응하는 라벨로 이루어진 numpy 배열
 # x와 y가 합쳐져있는 형태
+
+
+
+
+################################## 앙상블 ###################################
+
+앙상블이란? 두 개의 모델을 합치거나, 빼는 등의 처리를 해서 합치는 모델 결합 
+concatenate(여러 모델을 연결하는 클래스, 함수)로 작업
+
+keras56_ensemble3 확인
+
+
+################################## Tokenizer ################################
+
+Tokenizer() 함수는 자연어 처리에서 텍스트를 토큰화하기 위해 사용되는 도구. 주어진 텍스트를 단어 또는 문자 단위로 분할하여 각각의 토큰으로 전처리.
+단어 단위 또는 문자 단위로 텍스트를 각 토큰을 숫자로 매핑하여 단어 또는 문자를 정수 인덱스로 변환
+
+토큰화된 텍스트를 입력으로 사용하여 모델을 훈련하거나 예측할 때 필요한 입력 데이터로 변환.
+자연어 처리 작업을 수행
+
+token.fit_on_texts()는 Tokenizer 객체에 텍스트 데이터를 입력하여 각 단어에 고유한 정수 인덱스를 매핑하는 작업을 수행
+각 단어에 대한 빈도수를 계산하고, 각 단어를 고유한 정수로 인코딩하는데 필요한 사전을 구축
+생성된 사전을 기반으로 입력된 텍스트 데이터를 정수 인덱스로 변환
+
+token.texts_to_sequences()는 Tokenizer 객체를 사용하여 텍스트 데이터를 정수 시퀀스로 변환하는 메서드.
+이 메서드를 호출하면 Tokenizer가 텍스트 데이터를 정수 인덱스 시퀀스로 변환하여 반환
+
+fit_on_texts() 메서드를 사용하여 Tokenizer 객체를 학습시켜야 한다. 그런 다음 texts_to_sequences() 메서드를 사용하여 텍스트 데이터를 정수 시퀀스로 변환할 수 있다.
+
+x, y = token.texts_to_sequences([text1, text2])
+print(x)    # [[6, 2, 2, 3, 3, 7, 8, 9, 1, 1, 1, 10]
+print(y)    # [11, 12, 13, 4, 5, 4, 1, 1, 5]
+
+리스트라서 넘파이에 reshape 사용후 위치값 잡아주기 위해 -> 원핫
+
+to categorical, 사이킷런, 겟더미 차이 -> keras57_Tokenizer1 확인
+
+
+################################## Enbedding ##################################
+
+Embedding은 자연어 처리에서 주어진 텍스트 데이터를 특정 차원의 임베딩 공간에 매핑하는 작업을 수행하는 레이어,
+주어진 텍스트의 각 단어를 밀집된 벡터로 변환하고, 벡터는 신경망 모델의 학습을 통해 조정
+임베딩 벡터는 주어진 텍스트의 의미와 관련된 정보를 보존하도록 학습
+
+input_dim: 입력 데이터의 크기를 지정(단어 집합의 크기)
+output_dim: 벡터의 차원을 지정(차원에서 기울기를 기준으로 분리) 
+input_length: 입력 시퀀스의 길이를 지정. 이 매개변수는 Embedding 레이어 이전에 Flatten 레이어나 RNN 레이어 등과 같은 레이어에 입력될 때 유용
+
+
+
+##############################  Conv1D, Conv2D, Conv3D ##############################
+
+1차원 배열 데이터에는 Conv1D를, 2차원 배열 데이터에는 Conv2D를 사용, 차이는 입력 데이터의 차원
+Conv1D, Conv2D, Conv3D에서 1D, 2D, 3D는 합성곱을 진행할 입력 데이터의 차원을 의미. 합성곱 진행 방향을 고려
+
+Conv1D는 합성곱 진행 방향이 한 방향(가로) // 데이터 형태 : 3차, input_shape = 2차원 (10, 3), output_shape = 3차원, Flatten 필요 
+sequence 모델과 자연어 처리 주로 사용
+
+Conv2D는 합성곱 진행 방향이 두 방향(가로, 세로) // 데이터 형태 : 4차, input_shape = 3차원 (28, 28, 1), output_shape = 4차원, Flatten 필요 
+컴퓨터 비전(CV) 주로 사용
+
+Conv3D는 합성곱 진행 방향이 세 방향(가로, 세로, 높이) //
+의료(CT 영상) 분야와 비디오 프로세싱 주로 사용
+
+
+################################# SimpleRNN, LSTM, GRU ################################
+
+순차 데이터(sequential data)는 ‘어떤 순서를 가진 데이터’로 순서가 변경될 경우 데이터의 특성을 잃어버리는 데이터
+예를 들어 “I like coffee.”라는 문장은 이해할 수 있지만 ‘Like coffee I”라는 문장은 이해할 수 없다.
+문장 뿐만 아니라 주가, DNA 염기서열, 날씨와 같은 시계열 데이터(time series data)는 모두 순차 데이터에 해당
+순차 데이터를 분석하기 위한 모델은 과거 정보를 기억하는 기능이 필요 
+과거 정보를 기억하기 위해 사용하는 대표적인 방법은 이전에 사용한 데이터를 재사용하는 방법이 있다. 
+데이터를 재사용하기 위해서는 신경망 층에 순환될 필요가 있다. 이런 알고리즘을 우리는 순환 신경망이라고 부른다.
+
+복잡도 Simple < GRU < LSTM
+
+RNN 
+과거 시점들로부터 계속해서 받아오는 값들을 고려하여 생성되는 벡터로 layer를 통과하여 비선형성이 가해진 뒤 sigmoid(0~1) 함수를 통해 y를 예측
+활성화 함수가 tanh와 sigmoid이기 때문에 기울기 소실 문제가 너무 빨리오는 단점이 있다. 시점이 길어질수록 기울기는 더욱 소실.
+
+LSTM (Long Short-term Mode)
+과거 시점들로부터 계속해서 받아오는 값들을 정리하여(정보를 선택적으로 활용) 인코딩한 벡터들에 더욱 집중하고,
+현 시점의 인풋 데이터와 함께 과거 시점의 데이터를 어떻게 가용하여 Y 예측
+
+GRU(Gated Reccurent Unit)
+GRU는 복잡한 LSTM모델을 좀 더 단순화하여 기울기 소실 문제를 해결하기위해 개발
+
+# model.add(SimpleRNN(units=2000, input_shape = (3, 1)))  #  units(아웃풋 갯수), input_shape = (timesteps, features)
+# Input shape : 3-D tensor with shape (batch_size, timesteps, features). (데이터갯수, 시간의 크기, 열의 갯수)
+
+
+
+
+
 
 
 

@@ -69,7 +69,6 @@ model.save("..\_data\_save\keras24_3_save_model2.h5") #2의 모델은 같다. //
 #4. 평가, 예측
 loss = model.evaluate(x_test, y_test)   # 평가는 항상 테스트 데이터
 y_predict = model.predict(x_test)
-results = model.predict(x)
 
 from sklearn.metrics import r2_score    #
 r2 = r2_score(y_test, y_predict)    # 실제값, 예측값

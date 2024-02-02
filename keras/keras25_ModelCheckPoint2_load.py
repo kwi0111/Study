@@ -55,7 +55,6 @@ model = load_model('../_data/_save/MCP/keras25_MCP1.hdf5') #
 #4. 평가, 예측
 loss = model.evaluate(x_test, y_test)
 y_predict = model.predict(x_test)
-results = model.predict(x)
 
 from sklearn.metrics import r2_score
 r2 = r2_score(y_test, y_predict)

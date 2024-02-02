@@ -46,7 +46,6 @@ end_time = time.time()                                                          
 #4. 평가, 예측
 loss = model.evaluate(x_test, y_test)                                           # 평가는 항상 테스트 데이터
 y_predict = model.predict(x_test)
-results = model.predict(x)
 
 from sklearn.metrics import r2_score  
 r2 = r2_score(y_test, y_predict)                                                # 실제값, 예측값 순서

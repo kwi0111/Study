@@ -30,32 +30,41 @@ x_train = x_train.reshape(60000, 28, 28, 1)  # 데이터 내용 순서 변화 �
 x_test = x_test.reshape(10000, 28, 28, 1)  # 데이터 내용 순서 변화 없다
 
 print(x_train.shape, x_test.shape)  # (60000, 28, 28, 1) (10000, 28, 28, 1)
+print(y_train.shape, y_test.shape)  # (60000,) (10000,)
 
+print(y_train[0])   # 0
+print(y_train[1])   # 5
 ohe = OneHotEncoder(sparse = False)
-y_train = ohe.fit_transform(y_train.reshape(-1, 1))
-y_test = ohe.fit_transform(y_test.reshape(-1, 1))
-
-print(x_train[0])
-print(np.max(x_train), np.min(x_test))
-
-
-#2. 모델
-model = Sequential()
-model.add(Dense(9, input_shape=(28,28,1)))
-model.add(Conv2D(filters=10, kernel_size=(3,3)))    # 27,27,9
-model.add(Reshape(target_shape=(26*26, 10)))        # 연산 x 형태만 바꿈
-model.add(Conv1D(15, 4))
-model.add(LSTM(8, return_sequences=True))
-model.add(Conv1D(14, 2))  
-model.add(Flatten())
-model.add(Dense(8)) 
-model.add(Dense(7, activation='swish'))
-model.add(Dense(6, activation='swish'))
-model.add(Dense(10, activation='softmax'))          # N,10
+y_train = ohe.fit_transform(y_train.reshape(-1, 2))
+y_test = ohe.fit_transform(y_test.reshape(-1, 2))
+print(y_train[0])   # -1,1 일때 [0. 0. 0. 0. 0. 1. 0. 0. 0. 0.]
+print(y_train[1])   # -1,1 일때 [1. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
+print(y_train[0])   # -1,2 일때 [0. 0. 0. 0. 0. 1. 0. 0. 0. 0. 1. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
+print(y_train[1])   # -1,2 일때 [0. 0. 0. 0. 1. 0. 0. 0. 0. 0. 0. 1. 0. 0. 0. 0. 0. 0. 0. 0.]
 
 
-print(model.summary())
-# (kenel_size * channels + bias) * filters = 
+print(y_train.shape, y_test.shape)  # (60000, 10) (10000, 10)
+# print(x_train[0])
+# print(np.max(x_train), np.min(x_test))
+
+
+# #2. 모델
+# model = Sequential()
+# model.add(Dense(9, input_shape=(28,28,1)))
+# model.add(Conv2D(filters=10, kernel_size=(3,3)))    # 27,27,9
+# model.add(Reshape(target_shape=(26*26, 10)))        # 연산 x 형태만 바꿈
+# model.add(Conv1D(15, 4))
+# model.add(LSTM(8, return_sequences=True))
+# model.add(Conv1D(14, 2))  
+# model.add(Flatten())
+# model.add(Dense(8)) 
+# model.add(Dense(7, activation='swish'))
+# model.add(Dense(6, activation='swish'))
+# model.add(Dense(10, activation='softmax'))          # N,10
+
+
+# print(model.summary())
+# # (kenel_size * channels + bias) * filters = 
 
 
 """ #3. 컴파일, 훈련
