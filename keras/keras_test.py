@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from keras.models import Sequential, Model
-from keras.layers import Dense, Dropout, Input
+from keras.layers import Dense, Dropout, Input, Conv1D, Flatten, MaxPooling1D
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score, accuracy_score
@@ -19,6 +19,51 @@ test_csv = pd.read_csv(path + "test.csv", index_col=0 )
 print(test_csv.shape)  # (64197, 13)
 submission_csv = pd.read_csv(path + "sample_submission.csv")
 print(submission_csv.shape)  # (64197, 2)
+
+# print(train_csv.info())
+# a = train_csv['대출금액'] / train_csv['총상환원금']
+# print(a[23])
+
+
+# print(train_csv.shape, test_csv.shape) #(96294, 14) (64197, 13)
+# print(train_csv.columns, test_csv.columns,sep='\n',end="\n======================\n")
+# Index(['대출금액', '대출기간', '근로기간', '주택소유상태', '연간소득', '부채_대비_소득_비율', '총계좌수', '대출목적',
+#        '최근_2년간_연체_횟수', '총상환원금', '총상환이자', '총연체금액', '연체계좌수', '대출등급'],
+#       dtype='object')
+# Index(['대출금액', '대출기간', '근로기간', '주택소유상태', '연간소득', '부채_대비_소득_비율', '총계좌수', '대출목적',
+#        '최근_2년간_연체_횟수', '총상환원금', '총상환이자', '총연체금액', '연체계좌수'],
+#       dtype='object')
+# print(np.unique(train_csv['대출등급'],return_counts=True))
+# print(np.unique(train_csv['주택소유상태'],return_counts=True))
+
+
+# print(np.unique(test_csv['주택소유상태'],return_counts=True),end="\n======================\n")
+# (array(['ANY', 'MORTGAGE', 'OWN', 'RENT'], dtype=object), array([    1, 47934, 10654, 37705], dtype=int64))
+# (array(['MORTGAGE', 'OWN', 'RENT'], dtype=object), array([31739,  7177, 25281], dtype=int64))
+
+# print(np.unique(train_csv['대출목적'],return_counts=True))
+# print(np.unique(test_csv['대출목적'],return_counts=True),end="\n======================\n")
+# (array(['기타', '부채 통합', '소규모 사업', '신용 카드', '의료', '이사', '자동차', '재생 에너지',
+#        '주요 구매', '주택', '주택 개선', '휴가'], dtype=object), array([ 4725, 55150,   787, 24500,  1039,   506,   797,    60,  1803,
+#          301,  6160,   466], dtype=int64))
+# (array(['결혼', '기타', '부채 통합', '소규모 사업', '신용 카드', '의료', '이사', '자동차',
+#        '재생 에너지', '주요 구매', '주택', '주택 개선', '휴가'], dtype=object), array([    1,  3032, 37054,   541, 16204,   696,   362,   536,    29,
+#         1244,   185,  4019,   294], dtype=int64))
+
+# print(np.unique(train_csv['대출등급'],return_counts=True),end="\n======================\n")
+# (array(['A', 'B', 'C', 'D', 'E', 'F', 'G'], dtype=object), array([16772, 28817, 27623, 13354,  7354,  1954,   420], dtype=int64))
+
+# train_csv = train_csv[train_csv['주택소유상태'] != 'ANY'] #ANY은딱 한개 존재하기에 그냥 제거
+# test_csv = test_csv[test_csv['대출목적'] != '결혼']
+# test_csv.loc[test_csv['대출목적'] == '결혼' ,'대출목적'] = '기타' #결혼은 제거하면 개수가 안맞기에 기타로 대체
+
+# x.loc[x['type'] == 'red', 'type'] = 1
+# print(np.unique(train_csv['주택소유상태'],return_counts=True))
+# print(np.unique(test_csv['주택소유상태'],return_counts=True),end="\n======================\n")
+# print(np.unique(train_csv['대출목적'],return_counts=True))
+# print(np.unique(test_csv['대출목적'],return_counts=True),end="\n======================\n")
+
+
 
 
 # 라벨 엔코더
@@ -66,11 +111,9 @@ test_csv['근로기간'] = test_csv['근로기간'].fillna(test_csv['근로기�
 
 
 
-test_loan_interest = test_csv['총상환이자']
-train_loan_interest = train_csv['총상환이자']
 
 #신규고객 제거
-train_csv = train_csv[train_csv['총상환이자'] != 0.0 ]
+# train_csv = train_csv[train_csv['총상환이자'] != 0.0 ]
 
 
 
@@ -85,9 +128,9 @@ print(train_csv.dtypes)
 print(test_csv.dtypes)
 
 # x와 y를 분리
-x = train_csv.drop(['대출등급','총계좌수'], axis=1)
+x = train_csv.drop(['대출등급','총계좌수','대출목적',], axis=1)
 y = train_csv['대출등급']
-test_csv = test_csv.drop(['총계좌수'], axis=1)
+test_csv = test_csv.drop(['총계좌수','대출목적',], axis=1)
 print(x.shape, y.shape) # (96294, 13) (96294,)
 print(pd.value_counts(y))
 # 대출등급
@@ -123,7 +166,7 @@ print(y.shape)
 x_train, x_test, y_train, y_test = train_test_split(
                                                     x,
                                                     y_ohe,             
-                                                    train_size=0.89,
+                                                    train_size=0.87,
                                                     random_state=2024,
                                                     stratify=y_ohe,
                                                     shuffle=True,
@@ -141,25 +184,47 @@ x_train = scaler.transform(x_train)
 x_test = scaler.transform(x_test)
 test_csv = scaler.transform(test_csv)
 
+# x_train = x_train.reshape(-1, 11, 1)
+# x_test = x_test.reshape(-1,11, 1)
+# test_csv = test_csv.reshape(-1, 11, 1)
 
 
-#2. 모델 구성 
+# 2. 모델 구성 
+# model = Sequential()
+# model.add(Conv1D(64, 2, padding='same', input_shape = (11,1), activation='relu'))
+# model.add(Conv1D(32, 2, padding='same', activation='relu'))
+# model.add(Conv1D(16, 2, padding='same', activation='relu'))
+# model.add(Flatten())
+# model.add(Dense(520, activation='relu'))
+# model.add(Dropout(0.05))
+# model.add(Dense(230, activation='relu'))
+# model.add(Dense(130, activation='relu'))
+# model.add(Dense(60, activation='relu'))
+# model.add(Dropout(0.05))
+# model.add(Dense(7, activation='softmax'))  
 
 model = Sequential()
-model.add(Dense(12, input_dim=12, activation='swish'))
+model.add(Dense(12, input_dim=11, activation='swish'))
 model.add(Dense(80, activation='swish')) # 80
-model.add(Dropout(0.03))
-model.add(Dense(80, activation='swish'))
+model.add(Dropout(0.02))
+model.add(Dense(70, activation='swish'))
+model.add(Dropout(0.02))
 model.add(Dense(10, activation='swish'))
-model.add(Dropout(0.03))
 model.add(Dense(7, activation='swish'))
 model.add(Dense(5, activation='swish'))
+model.add(Dense(100, activation='swish'))
+model.add(Dense(5, activation='swish'))
+model.add(Dense(5, activation='swish'))
 model.add(Dense(10, activation='swish'))
-model.add(Dense(10, activation='swish'))
+model.add(Dense(100, activation='swish'))
 model.add(Dense(10, activation='swish'))
 model.add(Dense(4, activation='swish'))
 model.add(Dense(8, activation='swish'))
 model.add(Dense(7, activation='softmax'))
+
+
+
+
 
 
 #2. 모델구성(함수형)
@@ -190,7 +255,7 @@ filepath = "".join([MCP_path, 'k23_', date, '_', filename])
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 es = EarlyStopping(monitor='val_loss',
                 mode='min',
-                patience=400,
+                patience=300,
                 verbose=2,
                 restore_best_weights=True
                 )
@@ -202,7 +267,7 @@ es = EarlyStopping(monitor='val_loss',
 #                       )
 
 model.fit(x_train, y_train, epochs=15000, batch_size = 1324,
-                validation_split=0.18,  
+                validation_split=0.16,  
                 callbacks=[es],
                 verbose=2
                 )
@@ -225,6 +290,8 @@ print("로스 : ", results[0])
 print("acc : ", results[1])  
 print("f1 : ", f1)  
 submission_csv.to_csv(path + "submission_0202_1.csv", index=False)
+
+
 
 '''
 로스 :  0.16252931952476501

@@ -20,7 +20,7 @@ x1_train, x1_test, x2_train, x2_test, y_train, y_test = train_test_split(
 
 print(x1_train.shape, x2_train.shape, y_train.shape)     # (70, 2) (70, 3) (70,)
 
-#2-1. 모델
+#2-1. 모델  
 input1 = Input(shape=(2,))
 dense1 = Dense(10, activation='relu', name='bit1')(input1)  # name 라벨링
 dense2 = Dense(10, activation='relu', name='bit2')(dense1)

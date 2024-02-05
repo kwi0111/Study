@@ -49,11 +49,11 @@ fig, ax = plt.subplots(nrows=2, ncols=5, figsize=(10,10))   # 여러장 한번�
 
 for i in range(10):
     batch = it.next()
-    print(batch.shape)
+    # print(batch.shape)              # (1, 150, 150, 3)
     image = batch[0].astype('uint8')    # 이것 때문에 리스케일 안쓴다.
-    print(image.shape)
+    # print(image.shape)              # (150, 150, 3)
     ax[i//5, i%5].imshow(image)     # i//5는 행(row) 위치, i%5는 열(column) 위치
-    ax[i//5, i%5].axis('on')       #  눈금 및 라벨을 숨겨서 가시성을 없애는 것을 의미
+    ax[i//5, i%5].axis('off')       #  눈금 및 라벨을 숨겨서 가시성을 없애는 것을 의미
 print(np.min(batch), np.max(batch))
 
 plt.show()
