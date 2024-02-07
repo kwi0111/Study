@@ -61,22 +61,22 @@ print(y1_train[0])
 
 # model.summary() # 전체 데이터 갯수 맞춰줘야한다.
 
-# #3. 컴파일, 훈련
-# model.compile(loss='mse', optimizer='adam')
-# model.fit([x1_train, x2_train, x3_train], [y1_train, y2_train], epochs=300, batch_size=2, verbose=1)
+#3. 컴파일, 훈련
+model.compile(loss='mse', optimizer='adam')
+model.fit([x1_train, x2_train, x3_train], [y1_train, y2_train], epochs=300, batch_size=2, verbose=1)
 
-# #4. 평가 및 예측
-# results = model.evaluate([x1_test, x2_test, x3_test], [y1_test, y2_test])
-# y_predict = model.predict([x1_test, x2_test, x3_test])
-# print("loss통합 : ", results[0])
-# print("x1_test, x2_test, x3_test, y1_test : ", results[1])
-# print("x1_test, x2_test, x3_test, y2_test : ", results[2])
+#4. 평가 및 예측
+results = model.evaluate([x1_test, x2_test, x3_test], [y1_test, y2_test])
+y_predict = model.predict([x1_test, x2_test, x3_test])
+print("loss통합 : ", results[0])
+print("x1_test, x2_test, x3_test, y1_test : ", results[1])
+print("x1_test, x2_test, x3_test, y2_test : ", results[2])
 
 
 
-# print(y_predict)
-# print(len(x1_test))
-# print(y)
-# print(y_train)
+print(y_predict)
+print(len(x1_test))
+print(y)
+print(y_train)
 """
 """
