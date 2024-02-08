@@ -30,21 +30,21 @@ x_train, x_test, y_train, y_test = train_test_split(x,
 # model = LogisticRegression()
 # model = KNeighborsClassifier()
 # model = DecisionTreeClassifier()
-# model = RandomForestClassifier()
+model = RandomForestClassifier()
 
-models = [LinearSVC(),Perceptron(),LogisticRegression(),KNeighborsClassifier(),DecisionTreeClassifier(),RandomForestClassifier()]
-############## 훈련 반복 for 문 ###################
-for model in models :
-    try:
-        model.fit(x_train, y_train)
-        result = model.score(x_test, y_test)
-        print(f'{type(model).__name__} score : ', round(result, 2))
+# models = [LinearSVC(),Perceptron(),LogisticRegression(),KNeighborsClassifier(),DecisionTreeClassifier(),RandomForestClassifier()]
+# ############## 훈련 반복 for 문 ###################
+# for model in models :
+#     try:
+#         model.fit(x_train, y_train)
+#         result = model.score(x_test, y_test)
+#         print(f'{type(model).__name__} score : ', round(result, 2))
         
-        y_predict = model.predict(x_test)
-        print(f'{type(model).__name__} predict : ', round(r2_score(y_test,y_predict), 2))
-    except:
-        continue
-'''
+#         y_predict = model.predict(x_test)
+#         print(f'{type(model).__name__} predict : ', round(r2_score(y_test,y_predict), 2))
+#     except:
+#         continue
+
 #.3 컴파일, 훈련
 model.fit(x_train, y_train)
 
@@ -55,7 +55,7 @@ y_predict = model.predict(x_test)
 
 from sklearn.metrics import accuracy_score
 acc = accuracy_score(y_test, y_predict)
-print("accuracy_score : " , acc)
+print("accuracy_score : " , round(acc, 2))
 
 # LinearSVC                     0.9210526315789473
 # Perceptron                  0.8859649122807017
@@ -63,7 +63,7 @@ print("accuracy_score : " , acc)
 # KNeighborsClassifier        0.9649122807017544
 # DecisionTreeClassifier      0.9649122807017544
 # RandomForestClassifier        0.9912280701754386
-'''
+
 
 '''
 for문

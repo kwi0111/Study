@@ -18,13 +18,13 @@ x_train, x_test, y_train, y_test = train_test_split(
 
 
 #2. 모델 구성 
-allAlgorithms = all_estimators(type_filter='classifier')
-# allAlgorithms = all_estimators(type_filter='regressor')
+allAlgorithms = all_estimators(type_filter='classifier')    # SVC 분류형 모델
+# allAlgorithms = all_estimators(type_filter='regressor')   # SVR 회귀형(예측) 모델
 
-print("allAlgorithms: ", allAlgorithms)     # 리스트 1개, 튜플 41개 , 모델 이름1, 클래스1
+print("allAlgorithms: ", allAlgorithms)     # 리스트 1개, 튜플 41개(모델 이름1, 클래스1)
 print("모델 갯수: ", len(allAlgorithms))    # 분류 모델 갯수:  41
-# 이터레이터만 for문 사용 가능
 
+# Iterator만 for문 사용 가능 //  순서대로 다음 값을 리턴할 수 있는 객체
 for name, algorithm in allAlgorithms:
     try:
         #2. 모델

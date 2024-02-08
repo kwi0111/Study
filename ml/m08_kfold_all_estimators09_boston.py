@@ -1,0 +1,140 @@
+# 보스턴에 관한 데이터
+from sklearn.datasets import load_boston
+from sklearn.svm import SVC
+from sklearn.model_selection import train_test_split, KFold, cross_val_score, StratifiedKFold, cross_val_predict
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.utils import all_estimators
+import warnings
+warnings.filterwarnings(action='ignore')
+
+#1. 데이터
+datasets = load_boston()        # 변수에 집어 넣은다음 프린트
+print(datasets)
+x = datasets.data           # x에서 스케일링
+y = datasets.target         # y 건들지 않는다.
+
+x_train, x_test, y_train, y_test = train_test_split(x, y,               
+                                                    train_size=0.7,
+                                                    random_state=1140,     
+                                                    shuffle=True,
+                                                    )
+
+n_splits = 3
+kfold = KFold(n_splits=n_splits, shuffle=True, random_state=123)
+# 회귀의 결정값은 이산값 형태의 레이블이 아니라 연속된 숫자 값이기 때문에 결정값별로 분포를 정하는 의미가 없다.
+# kfold = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=123)
+
+from sklearn.preprocessing import MinMaxScaler, MaxAbsScaler , RobustScaler , StandardScaler
+
+# scaler = MinMaxScaler()
+scaler = StandardScaler()
+# scaler = MaxAbsScaler()
+# scaler = RobustScaler()
+
+scaler.fit(x_train)
+x_train = scaler.transform(x_train)
+x_test = scaler.transform(x_test)
+
+#2. 모델 구성 
+# allAlgorithms = all_estimators(type_filter='classifier')    # SVC 분류형 모델
+allAlgorithms = all_estimators(type_filter='regressor')   # SVR 회귀형(예측) 모델
+
+print("allAlgorithms: ", allAlgorithms)     # 리스트 1개, 튜플 41개(모델 이름1, 클래스1)
+print("모델 갯수: ", len(allAlgorithms))    # 분류 모델 갯수:  41
+
+# Iterator만 for문 사용 가능 //  순서대로 다음 값을 리턴할 수 있는 객체
+for name, algorithm in allAlgorithms:
+    try:
+        #2. 모델
+        model = algorithm()
+        #.3 훈련
+        scores = cross_val_score(model, x_train, y_train, cv = kfold)
+        print("==============", name, "=================")
+        print("ACC : ", scores, "\n 평균 ACC : ", round(np.mean(scores,), 4)) # ACC :  [0.96666667 0.96666667 1.         0.96666667 0.93333333] 5분할 했으니까 5개 나옴.
+
+        y_predict = cross_val_predict(model, x_test, y_test, cv = kfold)
+
+        acc = accuracy_score(y_test, y_predict)
+        print('cross_val_predict ACC :' ,acc)
+    except:
+        print(name, '은 안돌아간다!!!')  
+        # continue    #그냥 다음껄로 넘어간다.
+'''
+start_time = time.time()   #현재 시간
+model.fit(x_train, y_train)
+end_time = time.time()   #끝나는 시간
+
+#4. 평가, 예측
+results = model.score(x_test, y_test) 
+y_predict = model.predict(x_test) 
+print("acc : ", results)
+print("걸린시간 : ", round(end_time - start_time, 2),"초")
+
+# acc :  0.5275130859946872
+# 걸린시간 :  0.01 초
+
+# 스케일러 x
+# acc :  0.19233716312185622
+# 걸린시간 :  0.01 초
+
+# LinearSVR                   0.5198578310569075  
+# LinearRegression            0.739750714020937
+# KNeighborsRegressor         0.5389429273211952
+# DecisionTreeRegressor       0.8418772268815504
+# RandomForestRegressor        0.9210620914378058
+'''
+
+'''
+ARDRegression 의 정답률 :  0.74
+AdaBoostRegressor 의 정답률 :  0.88
+BaggingRegressor 의 정답률 :  0.9
+BayesianRidge 의 정답률 :  0.74
+DecisionTreeRegressor 의 정답률 :  0.85
+DummyRegressor 의 정답률 :  -0.0
+ElasticNet 의 정답률 :  0.66
+ElasticNetCV 의 정답률 :  0.74
+ExtraTreeRegressor 의 정답률 :  0.77
+ExtraTreesRegressor 의 정답률 :  0.92
+GammaRegressor 의 정답률 :  0.68
+GaussianProcessRegressor 의 정답률 :  0.29
+GradientBoostingRegressor 의 정답률 :  0.93
+HistGradientBoostingRegressor 의 정답률 :  0.91
+HuberRegressor 의 정답률 :  0.71
+KNeighborsRegressor 의 정답률 :  0.76
+KernelRidge 의 정답률 :  -5.13
+Lars 의 정답률 :  0.7
+LarsCV 의 정답률 :  0.72
+Lasso 의 정답률 :  0.67
+LassoCV 의 정답률 :  0.74
+LassoLars 의 정답률 :  -0.0
+LassoLarsCV 의 정답률 :  0.74
+LassoLarsIC 의 정답률 :  0.74
+LinearRegression 의 정답률 :  0.74
+LinearSVR 의 정답률 :  0.7
+MLPRegressor 의 정답률 :  0.71
+NuSVR 의 정답률 :  0.62
+OrthogonalMatchingPursuit 의 정답률 :  0.54
+OrthogonalMatchingPursuitCV 의 정답률 :  0.69
+PLSRegression 의 정답률 :  0.72
+PassiveAggressiveRegressor 의 정답률 :  0.63
+PoissonRegressor 의 정답률 :  0.8
+QuantileRegressor 의 정답률 :  -0.03
+RANSACRegressor 의 정답률 :  0.63
+RandomForestRegressor 의 정답률 :  0.92
+Ridge 의 정답률 :  0.74
+RidgeCV 의 정답률 :  0.74
+SGDRegressor 의 정답률 :  0.74
+SVR 의 정답률 :  0.62
+TheilSenRegressor 의 정답률 :  0.62
+TransformedTargetRegressor 의 정답률 :  0.74
+TweedieRegressor 의 정답률 :  0.65
+
+
+Kfold
+ACC :  [0.69163679 0.53536027 0.47384658] 
+ 평균 ACC :  0.5669
+'''
+
+
