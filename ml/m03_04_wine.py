@@ -1,10 +1,18 @@
 from sklearn.datasets import load_wine
 from sklearn.model_selection import train_test_split
-from sklearn.utils import all_estimators
-import warnings
-warnings.filterwarnings(action='ignore')
+import numpy as np
+import pandas as pd
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.callbacks import EarlyStopping
+from sklearn.metrics import accuracy_score, r2_score
+from sklearn.svm import LinearSVC
+from sklearn.linear_model import Perceptron, LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 
-#1. 데이터
+
 datasets = load_wine()
 x = datasets.data
 y = datasets.target
@@ -29,19 +37,19 @@ x_train = scaler.transform(x_train)
 x_test = scaler.transform(x_test)
 
 #2. 모델구성
-allAlgorithms = all_estimators(type_filter='classifier')
-
-for name, algorithm in allAlgorithms:
+models = [LinearSVC(),Perceptron(),LogisticRegression(),KNeighborsClassifier(),DecisionTreeClassifier(),RandomForestClassifier()]
+############## 훈련 반복 for 문 ###################
+for model in models :
     try:
-        #2. 모델
-        model = algorithm()
-        #.3 훈련
         model.fit(x_train, y_train)
+        result = model.score(x_test, y_test)
+        print(f'{type(model).__name__} score : ', round(result, 2))
         
-        acc = model.score(x_test, y_test)   
-        print(name, "의 정답률 : ", round(acc, 2))   
-    except: 
-        continue    # 그냥 다음껄로 넘어간다.
+        y_predict = model.predict(x_test)
+        print(f'{type(model).__name__} predict : ', round(r2_score(y_test,y_predict), 2))
+    except:
+        continue
+
 '''
 #3.컴파일, 훈련
 model.fit(x_train, y_train)
@@ -62,37 +70,22 @@ print("accuracy_score : " , acc)
 # DecisionTreeClassifier         0.8888888888888888
 # RandomForestClassifier        0.9722222222222222
 '''
+
+
 '''
-AdaBoostClassifier 의 정답률 :  0.94
-BaggingClassifier 의 정답률 :  0.94
-BernoulliNB 의 정답률 :  0.94
-CalibratedClassifierCV 의 정답률 :  0.94
-DecisionTreeClassifier 의 정답률 :  0.86
-DummyClassifier 의 정답률 :  0.39
-ExtraTreeClassifier 의 정답률 :  0.94
-ExtraTreesClassifier 의 정답률 :  0.97
-GaussianNB 의 정답률 :  1.0
-GaussianProcessClassifier 의 정답률 :  0.92
-GradientBoostingClassifier 의 정답률 :  0.92
-HistGradientBoostingClassifier 의 정답률 :  0.97
-KNeighborsClassifier 의 정답률 :  0.94
-LabelPropagation 의 정답률 :  0.92
-LabelSpreading 의 정답률 :  0.92
-LinearDiscriminantAnalysis 의 정답률 :  0.97
-LinearSVC 의 정답률 :  0.94
-LogisticRegression 의 정답률 :  1.0
-LogisticRegressionCV 의 정답률 :  1.0
-MLPClassifier 의 정답률 :  1.0
-NearestCentroid 의 정답률 :  0.97
-NuSVC 의 정답률 :  1.0
-PassiveAggressiveClassifier 의 정답률 :  0.94
-Perceptron 의 정답률 :  1.0
-QuadraticDiscriminantAnalysis 의 정답률 :  0.97
-RandomForestClassifier 의 정답률 :  0.97
-RidgeClassifier 의 정답률 :  0.97
-RidgeClassifierCV 의 정답률 :  1.0
-SGDClassifier 의 정답률 :  0.94
-SVC 의 정답률 :  1.0
+for문
+LinearSVC score :  0.94
+LinearSVC predict :  0.91
+Perceptron score :  1.0
+Perceptron predict :  1.0
+LogisticRegression score :  1.0
+LogisticRegression predict :  1.0
+KNeighborsClassifier score :  0.94
+KNeighborsClassifier predict :  0.91
+DecisionTreeClassifier score :  0.89
+DecisionTreeClassifier predict :  0.82
+RandomForestClassifier score :  0.97
+RandomForestClassifier predict :  0.95
 
 '''
 

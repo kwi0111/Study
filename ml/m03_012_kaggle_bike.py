@@ -2,10 +2,17 @@
 
 import numpy as np
 import pandas as pd
+from keras.models import Sequential
+from keras.layers import Dense
 from sklearn.model_selection import train_test_split
-from sklearn.utils import all_estimators
-import warnings
-warnings.filterwarnings(action='ignore')
+from sklearn.metrics import r2_score, mean_squared_error, mean_squared_log_error
+from sklearn.svm import LinearSVR
+from sklearn.svm import LinearSVC, SVC
+from sklearn.linear_model import Perceptron, LogisticRegression, LinearRegression
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+import time
 
 #1. 데이터 (분석, 정제, 전처리) // 판다스 
 path = "C:\\_data\\kaggle\\bike\\"
@@ -58,19 +65,18 @@ x_test = scaler.transform(x_test)
 test_csv = scaler.transform(test_csv)
 
 #2. 모델구성
-allAlgorithms = all_estimators(type_filter='regressor')
-
-for name, algorithm in allAlgorithms:
+models = [LinearSVR(),LinearRegression(),KNeighborsRegressor(),DecisionTreeRegressor(),RandomForestRegressor()]
+############## 훈련 반복 for 문 ###################
+for model in models :
     try:
-        #2. 모델
-        model = algorithm()
-        #.3 훈련
         model.fit(x_train, y_train)
+        result = model.score(x_test, y_test)
+        print(f'{type(model).__name__} score : ', round(result, 2))
         
-        acc = model.score(x_test, y_test)   
-        print(name, "의 정답률 : ", round(acc, 2))   
-    except: 
-        continue    # 그냥 다음껄로 넘어간다.
+        y_predict = model.predict(x_test)
+        print(f'{type(model).__name__} predict : ', round(r2_score(y_test,y_predict), 2))
+    except:
+        continue
 
 '''
 #3. 컴파일, 훈련
@@ -98,10 +104,16 @@ print("RMSE : ", rmse)
 # DecisionTreeRegressor       -0.1509105931507726
 # RandomForestRegressor       0.2499779602479224
 '''
-
-
 '''
-
-
+LinearSVR score :  0.2
+LinearSVR predict :  0.2
+LinearRegression score :  0.24
+LinearRegression predict :  0.24
+KNeighborsRegressor score :  0.24
+KNeighborsRegressor predict :  0.24
+DecisionTreeRegressor score :  -0.15
+DecisionTreeRegressor predict :  -0.15
+RandomForestRegressor score :  0.24
+RandomForestRegressor predict :  0.24
 '''
 

@@ -24,6 +24,17 @@ x_train, x_test, y_train, y_test = train_test_split(
         stratify=y,     # 에러 : 분류에서만 쓴다. // y값이 정수로 딱 떨어지는것만 쓴다.
         shuffle=True,
         )
+from sklearn.preprocessing import MinMaxScaler, MaxAbsScaler
+from sklearn.preprocessing import StandardScaler, RobustScaler  # StandardScaler 표준편차 (편차 쏠릴때 사용) // 
+# scaler = MinMaxScaler() # 클래스 정의
+scaler = StandardScaler() # 클래스 정의
+# scaler = MaxAbsScaler() # 클래스 정의
+# scaler = RobustScaler() # 클래스 정의
+
+scaler.fit(x_train)
+x_train = scaler.transform(x_train)
+x_test = scaler.transform(x_test)
+
 
 #2. 모델 구성 
 allAlgorithms = all_estimators(type_filter='classifier')
@@ -61,3 +72,40 @@ print("acc : ", results)
 # RandomForestClassifier          1.0
 
 '''   
+
+
+
+'''
+AdaBoostClassifier 의 정답률 :  1.0
+BaggingClassifier 의 정답률 :  1.0
+BernoulliNB 의 정답률 :  0.83
+CalibratedClassifierCV 의 정답률 :  0.97
+DecisionTreeClassifier 의 정답률 :  1.0
+DummyClassifier 의 정답률 :  0.33
+ExtraTreeClassifier 의 정답률 :  1.0
+ExtraTreesClassifier 의 정답률 :  1.0
+GaussianNB 의 정답률 :  1.0
+GaussianProcessClassifier 의 정답률 :  1.0
+GradientBoostingClassifier 의 정답률 :  1.0
+HistGradientBoostingClassifier 의 정답률 :  1.0
+KNeighborsClassifier 의 정답률 :  1.0
+LabelPropagation 의 정답률 :  1.0
+LabelSpreading 의 정답률 :  1.0
+LinearDiscriminantAnalysis 의 정답률 :  1.0
+LinearSVC 의 정답률 :  0.97
+LogisticRegression 의 정답률 :  1.0
+LogisticRegressionCV 의 정답률 :  1.0
+MLPClassifier 의 정답률 :  1.0
+NearestCentroid 의 정답률 :  0.92
+NuSVC 의 정답률 :  1.0
+PassiveAggressiveClassifier 의 정답률 :  0.86
+Perceptron 의 정답률 :  0.97
+QuadraticDiscriminantAnalysis 의 정답률 :  1.0
+RandomForestClassifier 의 정답률 :  1.0
+RidgeClassifier 의 정답률 :  0.81
+RidgeClassifierCV 의 정답률 :  0.81
+SGDClassifier 의 정답률 :  1.0
+SVC 의 정답률 :  1.0
+
+
+'''

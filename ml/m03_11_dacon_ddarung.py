@@ -2,12 +2,18 @@
 
 import numpy as np
 import pandas as pd
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.callbacks import EarlyStopping
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score, mean_squared_error
 import time
-from sklearn.utils import all_estimators
-import warnings
-warnings.filterwarnings(action='ignore')
+from sklearn.svm import LinearSVR
+from sklearn.svm import LinearSVC, SVC
+from sklearn.linear_model import Perceptron, LogisticRegression, LinearRegression
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
 #1. 데이터 // 판다스, 넘파이 
 path = "c:\\_data\\dacon\\ddarung\\"
@@ -50,6 +56,7 @@ scaler = StandardScaler() # 클래스 정의
 # scaler = MaxAbsScaler() # 클래스 정의
 # scaler = RobustScaler() # 클래스 정의
 
+
 scaler.fit(x_train)
 x_train = scaler.transform(x_train)
 x_test = scaler.transform(x_test)
@@ -57,21 +64,18 @@ test_csv = scaler.transform(test_csv)
 
 
 #2. 모델구성
-allAlgorithms = all_estimators(type_filter='regressor')
-
-for name, algorithm in allAlgorithms:
+models = [LinearSVR(),LinearRegression(),KNeighborsRegressor(),DecisionTreeRegressor(),RandomForestRegressor()]
+############## 훈련 반복 for 문 ###################
+for model in models :
     try:
-        #2. 모델
-        model = algorithm()
-        #.3 훈련
         model.fit(x_train, y_train)
+        result = model.score(x_test, y_test)
+        print(f'{type(model).__name__} score : ', round(result, 2))
         
-        acc = model.score(x_test, y_test)   
-        print(name, "의 정답률 : ", round(acc, 2))   
-    except: 
-        continue    # 그냥 다음껄로 넘어간다.
-
-
+        y_predict = model.predict(x_test)
+        print(f'{type(model).__name__} predict : ', round(r2_score(y_test,y_predict), 2))
+    except:
+        continue
 '''
 #3. 컴파일, 훈련
 start_time = time.time()   #현재 시간
@@ -98,52 +102,17 @@ print("RMSE : " , rmse)
 # KNeighborsRegressor         0.7257135057206954
 # DecisionTreeRegressor       0.7524878637597527
 # RandomForestRegressor       0.8367343854943599
-
 '''
 
-
 '''
-ARDRegression 의 정답률 :  0.67
-AdaBoostRegressor 의 정답률 :  0.64
-BaggingRegressor 의 정답률 :  0.79
-BayesianRidge 의 정답률 :  0.67
-DecisionTreeRegressor 의 정답률 :  0.67
-DummyRegressor 의 정답률 :  -0.0
-ElasticNet 의 정답률 :  0.62
-ElasticNetCV 의 정답률 :  0.67
-ExtraTreeRegressor 의 정답률 :  0.64
-ExtraTreesRegressor 의 정답률 :  0.84
-GammaRegressor 의 정답률 :  0.52
-GaussianProcessRegressor 의 정답률 :  0.58
-GradientBoostingRegressor 의 정답률 :  0.84
-HistGradientBoostingRegressor 의 정답률 :  0.85
-HuberRegressor 의 정답률 :  0.65
-KNeighborsRegressor 의 정답률 :  0.77
-KernelRidge 의 정답률 :  -1.06
-Lars 의 정답률 :  0.67
-LarsCV 의 정답률 :  0.67
-Lasso 의 정답률 :  0.67
-LassoCV 의 정답률 :  0.67
-LassoLars 의 정답률 :  0.32
-LassoLarsCV 의 정답률 :  0.67
-LassoLarsIC 의 정답률 :  0.67
-LinearRegression 의 정답률 :  0.67
-LinearSVR 의 정답률 :  0.6
-MLPRegressor 의 정답률 :  0.68
-NuSVR 의 정답률 :  0.49
-OrthogonalMatchingPursuit 의 정답률 :  0.47
-OrthogonalMatchingPursuitCV 의 정답률 :  0.66
-PLSRegression 의 정답률 :  0.65
-PassiveAggressiveRegressor 의 정답률 :  0.61
-PoissonRegressor 의 정답률 :  0.72
-QuantileRegressor 의 정답률 :  -0.02
-RANSACRegressor 의 정답률 :  0.59
-RandomForestRegressor 의 정답률 :  0.84
-Ridge 의 정답률 :  0.67
-RidgeCV 의 정답률 :  0.67
-SGDRegressor 의 정답률 :  0.67
-SVR 의 정답률 :  0.5
-TheilSenRegressor 의 정답률 :  0.67
-TransformedTargetRegressor 의 정답률 :  0.67
-TweedieRegressor 의 정답률 :  0.57
+LinearSVR score :  0.6
+LinearSVR predict :  0.6
+LinearRegression score :  0.67
+LinearRegression predict :  0.67
+KNeighborsRegressor score :  0.77
+KNeighborsRegressor predict :  0.77
+DecisionTreeRegressor score :  0.76
+DecisionTreeRegressor predict :  0.76
+RandomForestRegressor score :  0.84
+RandomForestRegressor predict :  0.84
 '''

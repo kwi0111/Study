@@ -1,12 +1,18 @@
 import numpy as np
 import pandas as pd
+from keras.models import Sequential
+from keras.layers import Dense, Dropout
+from keras.callbacks import EarlyStopping, ModelCheckpoint
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import f1_score, accuracy_score
-from sklearn.model_selection import train_test_split
-from sklearn.utils import all_estimators
+from sklearn.metrics import r2_score, accuracy_score
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.svm import LinearSVC, SVC
+from sklearn.linear_model import Perceptron, LogisticRegression, LinearRegression
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 import warnings
 warnings.filterwarnings(action='ignore')
-
 
 #1. 데이터
 path = "C:\\_data\\dacon\\dechul\\"
@@ -48,21 +54,19 @@ x_train, x_test, y_train, y_test = train_test_split(
                                                     shuffle=True,
                                                     )
 #2. 모델 구성 
-allAlgorithms = all_estimators(type_filter='classifier')
-
-for name, algorithm in allAlgorithms:
+models = [LinearSVC(),Perceptron(),LogisticRegression(),KNeighborsClassifier(),DecisionTreeClassifier(),RandomForestClassifier()]
+############## 훈련 반복 for 문 ###################
+for model in models :
     try:
-        #2. 모델
-        model = algorithm()
-        #.3 훈련
         model.fit(x_train, y_train)
+        result = model.score(x_test, y_test)
+        print(f'{type(model).__name__} score : ', round(result, 2))
         
-        acc = model.score(x_test, y_test)   
-        print(name, "의 정답률 : ", round(acc, 2))   
-    except: 
+        y_predict = model.predict(x_test)
+        print(f'{type(model).__name__} predict : ', round(r2_score(y_test,y_predict), 2))
+    except:
         continue
-
-
+    
 '''
 #3.컴파일, 훈련
 model.fit(x_train, y_train)
@@ -85,9 +89,19 @@ print("acc : ", results)
 # RandomForestClassifier        0.8078920041536864
 '''
 
-
 '''
-
+LinearSVC score :  0.23
+LinearSVC predict :  -0.43
+Perceptron score :  0.29
+Perceptron predict :  -0.02
+LogisticRegression score :  0.36
+LogisticRegression predict :  0.07
+KNeighborsClassifier score :  0.43
+KNeighborsClassifier predict :  0.19
+DecisionTreeClassifier score :  0.84
+DecisionTreeClassifier predict :  0.83
+RandomForestClassifier score :  0.8
+RandomForestClassifier predict :  0.82
 '''
 
 

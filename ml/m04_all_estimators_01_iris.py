@@ -16,6 +16,7 @@ x_train, x_test, y_train, y_test = train_test_split(
     shuffle=True,
     )
 
+
 #2. 모델 구성 
 allAlgorithms = all_estimators(type_filter='classifier')
 # allAlgorithms = all_estimators(type_filter='regressor')

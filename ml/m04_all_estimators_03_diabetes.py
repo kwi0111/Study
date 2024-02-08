@@ -24,6 +24,16 @@ test_csv = test_csv.drop(['Insulin'], axis=1)
 x_train, x_test, y_train, y_test = train_test_split(
     x, y, shuffle=True, train_size=0.9, random_state=123123,
 )
+from sklearn.preprocessing import MinMaxScaler, MaxAbsScaler , RobustScaler , StandardScaler
+
+# scaler = MinMaxScaler()
+scaler = StandardScaler()
+# scaler = MaxAbsScaler()
+# scaler = RobustScaler()
+
+scaler.fit(x_train)
+x_train = scaler.transform(x_train)
+x_test = scaler.transform(x_test)
 
 
 #2. 모델 구성
@@ -59,6 +69,37 @@ print("model.score : ", results)
 # DecisionTreeClassifier      0.7727272727272727
 # RandomForestClassifier        0.803030303030303
 '''
-
+'''
+daBoostClassifier 의 정답률 :  0.79
+BaggingClassifier 의 정답률 :  0.77
+BernoulliNB 의 정답률 :  0.68
+CalibratedClassifierCV 의 정답률 :  0.8
+DecisionTreeClassifier 의 정답률 :  0.82
+DummyClassifier 의 정답률 :  0.61
+ExtraTreeClassifier 의 정답률 :  0.71
+ExtraTreesClassifier 의 정답률 :  0.83
+GaussianNB 의 정답률 :  0.76
+GaussianProcessClassifier 의 정답률 :  0.8
+GradientBoostingClassifier 의 정답률 :  0.77
+HistGradientBoostingClassifier 의 정답률 :  0.85
+KNeighborsClassifier 의 정답률 :  0.8
+LabelPropagation 의 정답률 :  0.71
+LabelSpreading 의 정답률 :  0.71
+LinearDiscriminantAnalysis 의 정답률 :  0.79
+LinearSVC 의 정답률 :  0.8
+LogisticRegression 의 정답률 :  0.79
+LogisticRegressionCV 의 정답률 :  0.79
+MLPClassifier 의 정답률 :  0.83
+NearestCentroid 의 정답률 :  0.67
+NuSVC 의 정답률 :  0.83
+PassiveAggressiveClassifier 의 정답률 :  0.8
+Perceptron 의 정답률 :  0.71
+QuadraticDiscriminantAnalysis 의 정답률 :  0.74
+RandomForestClassifier 의 정답률 :  0.77
+RidgeClassifier 의 정답률 :  0.8
+RidgeClassifierCV 의 정답률 :  0.8
+SGDClassifier 의 정답률 :  0.76
+SVC 의 정답률 :  0.82
+'''
 
 

@@ -1,10 +1,17 @@
 import numpy as np                                                  # numpy 빠른 계산을 위해 지원되는 파이썬 라이브러리
 import time
+from keras.models import Sequential
+from keras.layers import Dense
+from sklearn.metrics import r2_score
 from sklearn.datasets import fetch_california_housing               # 사이킷런 : 파이썬 머신러닝 라이브러리 // sklearn에서 제공하는 데이터셋
 from sklearn.model_selection import train_test_split                # scikit-learn 패키지 중 model_selection에서 데이터 분할
-from sklearn.utils import all_estimators
-import warnings
-warnings.filterwarnings(action='ignore')
+from sklearn.svm import LinearSVR
+from sklearn.svm import LinearSVC, SVC
+from sklearn.linear_model import Perceptron, LogisticRegression, LinearRegression
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+
 
 #1. 데이터
 datasets = fetch_california_housing()                               # fetch : 가져옴
@@ -17,31 +24,21 @@ x_train, x_test, y_train, y_test = train_test_split(x, y,                     # 
                                                     random_state=123,     
                                                     shuffle=True,
                                                     )
-from sklearn.preprocessing import MinMaxScaler, MaxAbsScaler , RobustScaler , StandardScaler
-
-# scaler = MinMaxScaler()
-scaler = StandardScaler()
-# scaler = MaxAbsScaler()
-# scaler = RobustScaler()
-
-scaler.fit(x_train)
-x_train = scaler.transform(x_train)
-x_test = scaler.transform(x_test)
 
 #2. 모델 구성 
-allAlgorithms = all_estimators(type_filter='regressor')
-
-for name, algorithm in allAlgorithms:
+models = [LinearSVR(),LinearRegression(),KNeighborsRegressor(),DecisionTreeRegressor(),RandomForestRegressor()]
+############## 훈련 반복 for 문 ###################
+for model in models :
     try:
-        #2. 모델
-        model = algorithm()
-        #.3 훈련
         model.fit(x_train, y_train)
+        result = model.score(x_test, y_test)
+        print(f'{type(model).__name__} score : ', round(result, 2))
         
-        acc = model.score(x_test, y_test)   
-        print(name, "의 정답률 : ", round(acc, 2))   
-    except: 
-        continue    # 그냥 다음껄로 넘어간다.
+        y_predict = model.predict(x_test)
+        print(f'{type(model).__name__} predict : ', round(r2_score(y_test,y_predict), 2))
+    except:
+        continue
+
 '''
 #3. 컴파일, 훈련 
 start_time = time.time()   #현재 시간
@@ -65,14 +62,18 @@ print("r2 스코어 : " , r2)
 # RandomForestRegressor       0.8096938489905334
 '''
 
-
 '''
-
-
+LinearSVR score :  0.08
+LinearSVR predict :  0.08
+LinearRegression score :  0.61
+LinearRegression predict :  0.61
+KNeighborsRegressor score :  0.15
+KNeighborsRegressor predict :  0.15
+DecisionTreeRegressor score :  0.63
+DecisionTreeRegressor predict :  0.63
+RandomForestRegressor score :  0.81
+RandomForestRegressor predict :  0.81
 '''
-
-
-
 
 
 
