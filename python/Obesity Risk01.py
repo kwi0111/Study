@@ -6,6 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler, MinMaxScaler, Normalizer, RobustScaler
 from sklearn.metrics import accuracy_score, f1_score
 from lightgbm import LGBMClassifier
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, MaxAbsScaler, RobustScaler
 import datetime
 dt = datetime.datetime.now()
 
@@ -17,7 +18,6 @@ x= train.drop(['NObeyesdad'],axis=1)
 y= train['NObeyesdad']
 # print(train.shape,test.shape)   #(20758, 17) (13840, 16)    NObeyesdad
 # print(x.shape,y.shape)  #(20758, 16) (20758,)
-
 lb = LabelEncoder()
 
 # 라벨 인코딩할 열 목록
@@ -39,6 +39,13 @@ x_train,x_test,y_train,y_test=train_test_split(x,y,train_size=0.90,random_state=
 
 # print(x_train.shape,y_train.shape)  #(18682, 16) (18682,)
 # print(x_test.shape,y_test.shape)    #(2076, 16) (2076,)
+# scaler = StandardScaler() # 클래스 정의
+# scaler = MaxAbsScaler() # 클래스 정의
+scaler = RobustScaler() # 클래스 정의
+# scaler = MinMaxScaler()
+x_train_scaled = scaler.fit_transform(x_train)
+x_test_scaled = scaler.transform(x_test)
+test_scaled = scaler.transform(test)
 import random
 
 r = random.randint(1, 100)
@@ -49,13 +56,27 @@ lgbm_params = {"objective": "multiclass",
                "boosting_type": "gbdt",
                "random_state": random_state,
                "num_class": 7,
-               "learning_rate" :  0.05,  # 수정된 학습률
-               'n_estimators': 1000,    # 수정된 부스팅 라운드 수
-               'num_leaves': 50,        # 수정된 최대 잎의 수
-               'feature_fraction': 0.8, # 수정된 특성 선택 비율
-               'bagging_fraction': 0.8,  # 수정된 샘플 선택 비율
+               "learning_rate" :  0.03,   # 수정된 학습률
+               'n_estimators': 1500,     # 수정된 부스팅 라운드 수
+               'num_leaves': 70,         # 수정된 최대 잎의 수
+               'feature_fraction': 0.7,  # 수정된 특성 선택 비율
+               'bagging_fraction': 0.7,  # 수정된 샘플 선택 비율
                'bagging_freq': 4,
-               'min_child_samples': 20}
+               'min_child_samples': 10}  # 수정된 최소 샘플 수
+
+# lgbm_params = {"objective": "multiclass",
+#                "metric": "multi_logloss",
+#                "verbosity": -1,
+#                "boosting_type": "gbdt",
+#                "random_state": random_state,
+#                "num_class": 7,
+#                "learning_rate" :  0.05,  # 수정된 학습률
+#                'n_estimators': 1000,    # 수정된 부스팅 라운드 수
+#                'num_leaves': 50,        # 수정된 최대 잎의 수
+#                'feature_fraction': 0.8, # 수정된 특성 선택 비율
+#                'bagging_fraction': 0.8,  # 수정된 샘플 선택 비율
+#                'bagging_freq': 4,
+#                'min_child_samples': 20}
 
 
 model = LGBMClassifier(**lgbm_params)
