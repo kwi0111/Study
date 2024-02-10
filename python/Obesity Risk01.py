@@ -6,6 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler, MinMaxScaler, Normalizer, RobustScaler
 from sklearn.metrics import accuracy_score, f1_score
 from lightgbm import LGBMClassifier
+from catboost import CatBoostClassifier
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, MaxAbsScaler, RobustScaler
 import datetime
 dt = datetime.datetime.now()
@@ -50,19 +51,19 @@ import random
 
 r = random.randint(1, 100)
 random_state = r
-lgbm_params = {"objective": "multiclass",
-               "metric": "multi_logloss",
-               "verbosity": -1,
-               "boosting_type": "gbdt",
-               "random_state": random_state,
-               "num_class": 7,
-               "learning_rate" :  0.03,   # 수정된 학습률
-               'n_estimators': 1500,     # 수정된 부스팅 라운드 수
-               'num_leaves': 70,         # 수정된 최대 잎의 수
-               'feature_fraction': 0.7,  # 수정된 특성 선택 비율
-               'bagging_fraction': 0.7,  # 수정된 샘플 선택 비율
-               'bagging_freq': 4,
-               'min_child_samples': 10}  # 수정된 최소 샘플 수
+CatBoost_params = {
+    "loss_function": "MultiClass",
+    "eval_metric": "MultiClass",
+    "verbose": False,
+    "random_state": random_state,
+    "learning_rate": 0.03,
+    "n_estimators": 1500,
+    "depth": 7,  # 수정된 최대 깊이
+    "colsample_bylevel": 0.7,
+    "subsample": 0.7,
+    "min_child_samples": 10,
+    "bootstrap_type": "Bernoulli"
+}
 
 # lgbm_params = {"objective": "multiclass",
 #                "metric": "multi_logloss",
@@ -79,7 +80,7 @@ lgbm_params = {"objective": "multiclass",
 #                'min_child_samples': 20}
 
 
-model = LGBMClassifier(**lgbm_params)
+model = CatBoostClassifier(**CatBoost_params)
 
 # 모델 학습
 model.fit(x_train, y_train)
