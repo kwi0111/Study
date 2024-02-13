@@ -9,23 +9,26 @@ from keras.layers import Dense, Conv1D, LSTM, Flatten, Embedding, Input, Concate
 from sklearn.metrics import r2_score
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from sklearn.model_selection import train_test_split,  GridSearchCV, StratifiedKFold, cross_val_predict, GridSearchCV
-from sklearn.preprocessing import OneHotEncoder, LabelEncoder, MinMaxScaler, Normalizer, RobustScaler, StandardScaler, MaxAbsScaler
+from sklearn.preprocessing import OneHotEncoder,LabelEncoder, MinMaxScaler, Normalizer, RobustScaler, StandardScaler, MaxAbsScaler
 from keras.utils import to_categorical
+import warnings
+warnings.filterwarnings(action='ignore')
 le = LabelEncoder()
 import datetime
-import keras
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.pipeline import make_pipeline,Pipeline
 from lightgbm import LGBMClassifier
-from catboost import CatBoostClassifier
-'''
-SEED1 = 1117
-SEED2 = 1117
-SEED3 = 1117
+from xgboost import XGBClassifier
+from catboost import CatBoostClassifier, Pool
+
+SEED1 = 43
+SEED2 = 43
+SEED3 = 43
 
 tf.random.set_seed(SEED1)  
 np.random.seed(SEED2)
 rn.seed(SEED3)
-'''
+
 
 
 #1. 데이터
@@ -58,6 +61,7 @@ submission_csv = pd.read_csv(path + 'sample_submission.csv')
 # Insufficient_Weight    2523
 # Overweight_Level_II    2522
 # Overweight_Level_I     2427
+
 
 ##############데이터 전처리###############
 le = LabelEncoder()
@@ -164,7 +168,13 @@ test_csv['MTRANS']= test_csv['MTRANS'].str.replace("Walking","4")
 x = train_csv.drop('NObeyesdad', axis = 1)
 y = train_csv['NObeyesdad']
 
-#y = le.fit_transform(y)
+y = le.fit_transform(y)
+
+# y = y.values.reshape(-1,1)
+# ohe = OneHotEncoder(sparse = False)
+# ohe.fit(y)
+# y = ohe.transform(y)
+# print(y.shape)  
 
 from sklearn.preprocessing import MinMaxScaler, MaxAbsScaler
 from sklearn.preprocessing import StandardScaler, RobustScaler
@@ -187,32 +197,33 @@ import time
 
 
 
-
 x_train, x_test, y_train, y_test = train_test_split(x, y, train_size = 0.9, shuffle=True, random_state=5, stratify= y)
 #5 9158 19 9145
 n_splits=5
 kfold = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=123)
-parameters = [
-    {"auto_class_weights": ['Balanced'], "iterations":[500, 1000, 3000], "early_stopping_rounds":[50, 70, 130]}]    # 12
 
-#model = CatBoostClassifier(auto_class_weights = 'Balanced', iterations=1000, early_stopping_rounds=70,
+# y_train = to_categorical(y_train, 7)
+# y_test = to_categorical(y_test, 7) 
 
-print('Data types \n========================================= \n' +str(x.dtypes))
 
-columns_id = np.arange(0, x.shape[1])
-categorical_features_id = columns_id[x.dtypes == object]
 
-# #mms = MinMaxScaler() #(feature_range=(0,1))
+
+
+
+# columns_id = np.arange(0, x.shape[1])
+# categorical_features_id = columns_id[x.dtypes == object]
+
+# mms = MinMaxScaler() #(feature_range=(0,1))
 # mms = StandardScaler()
-# #mms = MaxAbsScaler()
-# #mms = RobustScaler()
-# #mms = Normalizer()
+mms = MaxAbsScaler()
+# mms = RobustScaler()
+#mms = Normalizer()
 
 
-# mms.fit(x_train)
-# x_train= mms.transform(x_train)
-# x_test= mms.transform(x_test)
-# test_csv= mms.transform(test_csv)
+mms.fit(x_train)
+x_train= mms.transform(x_train)
+x_test= mms.transform(x_test)
+test_csv= mms.transform(test_csv)
 
 
 #==================================
@@ -222,29 +233,80 @@ from lightgbm import LGBMClassifier
 from catboost import CatBoostClassifier
 
 #model = RandomForestClassifier(max_depth=100, random_state=1117)#1001 #1117
-#model = LGBMClassifier()
+
+################lgbm########################
+lgb_params = {
+    "objective": "multiclass",          
+    "metric": "multi_logloss",          
+    "verbosity": 1,                    
+    "boosting_type": "gbdt",            
+    "random_state": 42,       
+    "num_class": 7,                     
+    'learning_rate': 0.030962211546832760,  
+    'n_estimators': 20000,                
+    'reg_alpha' : 0.9269816785,
+    'max_depth': 100,                    
+    'colsample_bytree': 0.40977129346872643,  
+    'subsample': 0.535797422450176,    
+    'n_jobs' : -1,
+    'min_child_samples': 10             
+}
+
+
+model = LGBMClassifier(**lgb_params)
+################lgbm########################
+
+
+################xgb########################
+
+# params = {
+#     'n_estimators': 30000,
+#     'learning_rate': 0.12,
+#     'gamma': 0.8024196354156454324,
+#     'reg_alpha': 0.9025931173755949,
+#     'reg_lambda': 0.96835667255875388,
+#     'max_depth': 50,
+#     'min_child_weight': 20,
+#     'subsample': 0.893274050086088,
+#     'colsample_bytree': 0.7579828557036317,
+# }
+
+# model = XGBClassifier(**params, random_state = 28233)
+################xgb########################
+
+################catboost########################
+# model = CatBoostClassifier(auto_class_weights = 'Balanced', 
+#                            iterations=50000,
+#                            learning_rate=0.002162645,
+#                            max_depth=16,
+#                            l2_leaf_reg=18,
+#                            max_bin=15,
+#                            early_stopping_rounds=70, 
+#                            random_state=98765)
+
+
+# param = {'auto_class_weights':'Balanced','iterations':10000,'early_stopping_rounds':100,'l2_leaf_reg':18,'learning_rate':0.0021626,
+#          'max_depth':16,'task_type':'GPU','max_bin':8, 'random_state':9876}
+# model = CatBoostClassifier(**param, bootstrap_type='Poisson')
+
+################catboost########################
+
 
 #3. 컴파일 , 훈련
 
 
-
-#model = CatBoostClassifier(auto_class_weights = 'Balanced', iterations=1000, early_stopping_rounds=70, verbose=50)
-
-model = GridSearchCV(CatBoostClassifier(), 
-                     parameters, 
-                     cv=kfold, 
-                     verbose=1, 
-                     refit= True, #디폴트 트루~
-                     n_jobs=-1) #CPU 다 쓴다!
+x_train = np.asarray(x_train).astype(np.float32)
+x_test = np.asarray(x_test).astype(np.float32)
+test_csv = np.asarray(test_csv).astype(np.float32)
 
 start_time = time.time()
-model.fit(x_train, y_train, eval_set=(x_test, y_test), cat_features=categorical_features_id)
+model.fit(x_train, y_train)#, eval_set=(x_test, y_test))#, cat_features=categorical_features_id)
 end_time = time.time()
 
 #4. 평가, 예측
-print("최적의 매개변수 : ", model.best_estimator_)
-print("최적의 파라미터 : ", model.best_params_)
-print('best_score :', model.best_score_)
+# print("최적의 매개변수 : ", model.best_estimator_)
+# print("최적의 파라미터 : ", model.best_params_)
+# print('best_score :', model.best_score_)
 print('score :', model.score(x_test, y_test))
 
 
@@ -254,11 +316,15 @@ print("acc :", results)
 
 y_predict = model.predict(x_test)
 
-#y_submit = model.predict(test_csv)
+
 
 
 #########catboost###########
-y_submit = model.predict(test_csv)[:,0]
+#y_submit = model.predict(test_csv)[:,0]
+
+y_submit = model.predict(test_csv)
+y_submit = le.inverse_transform(y_submit)
+
 
 
 acc = model.score(x_test, y_test)

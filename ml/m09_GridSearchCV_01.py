@@ -12,7 +12,7 @@ x, y = load_iris(return_X_y=True)
 
 x_train, x_test, y_train, y_test = train_test_split(x, y, shuffle=True, random_state=123, train_size=0.8, stratify=y)
 
-n_splits = 3
+n_splits = 5
 kfold = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=123)
 
 parameters = [
@@ -25,13 +25,15 @@ parameters = [
 
 #2. 모델
 # model = SVC()
-model = GridSearchCV(SVC(), 
-                     parameters,
-                     cv=kfold,
+model = GridSearchCV(               # 모든 조합에 대해 교차검증 후 가장 좋은 성능을 내는 하이퍼파라미터 조합을 찾음 / 시간이 오래 걸린다.
+                     SVC(),         # estimator : 모델 객체 지정
+                     parameters,    # 하이퍼파라미터 목록을 dictionary 로 전달
+                     cv=kfold,      # 교차검증 시 fold 개수
                      verbose=1,
-                    #  refit=True,
-                    n_jobs=-1,  # CPU
+                     refit=True,    # 최적의 하이퍼파라미터를 사용하여 최종 모델을 자동으로 학습
+                     n_jobs=-1,      # 사용할 CPU 코어 개수
                      )
+
 start_time = time.time()
 model.fit(x_train, y_train)
 end_time = time.time()

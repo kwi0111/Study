@@ -29,13 +29,13 @@ for column in columns_to_encode:
 x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=0.90, random_state=3, stratify=y)
 
 # 데이터 스케일링
-# scaler = StandardScaler() 
-scaler = MaxAbsScaler()
+scaler = StandardScaler() 
+# scaler = MaxAbsScaler()
 # scaler = MinMaxScaler()
 # scaler = RobustScaler() 
-x_train_scaled = scaler.fit_transform(x_train)
-x_test_scaled = scaler.transform(x_test)
-test_scaled = scaler.transform(test)
+x_train = scaler.fit_transform(x_train)
+x_test = scaler.transform(x_test)
+test = scaler.transform(test)
 
 # CatBoost 모델 정의
 random_state = np.random.randint(1, 100)
@@ -44,16 +44,22 @@ CatBoost_params = {
     "eval_metric": "MultiClass",
     "verbose": False,
     "random_state": random_state,
-    "learning_rate": 0.03,         # 수정된 학습률
-    "n_estimators": 1500,           # 수정된 부스팅 라운드 수
+    "learning_rate": 0.03,                # 학습률
+    "n_estimators": 1500,                  # 부스팅 라운드 수
     "colsample_bylevel": 0.7,
     "min_child_samples": 10,
-    "bootstrap_type": "Bernoulli",  # 수정된 부트스트랩 유형
-    "subsample": 0.8,               # 수정된 샘플 선택 비율
-    "depth": 6,                     # 수정된 트리의 최대 깊이
-    "border_count": 254,            # 데이터 세트의 범주형 변수 수에 대한 근사값
-    "l2_leaf_reg": 3                # L2 정규화 강도
+    "bootstrap_type": "Bernoulli",         # 부트스트랩 유형
+    "subsample": 0.8,                      # 샘플 선택 비율
+    "depth": 8,                            # 트리의 최대 깊이
+    "border_count": 128,                   # 범주형 변수 수에 대한 근사값
+    "l2_leaf_reg": 5,                      # L2 정규화 강도
+    "leaf_estimation_iterations": 20,      # 각 잎 노드의 초기 추정 횟수
+    "leaf_estimation_method": "Gradient",  # 잎 노드의 초기 추정 방법
+    "thread_count": -1                     # 사용할 스레드 수 (-1은 가능한 모든 스레드 사용)
 }
+
+
+
 
 
 

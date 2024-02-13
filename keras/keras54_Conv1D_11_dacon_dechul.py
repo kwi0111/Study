@@ -53,8 +53,8 @@ y = train_csv['대출등급']
 test_csv = test_csv.drop(['총계좌수'], axis=1)
 
 print(x.shape, y.shape) # (96294, 13) (96294,)
-print(pd.value_counts(y))
-
+# print(pd.value_counts(y))
+# print(np.unique(y, return_counts=True))
 # 대출등급
 # 1    28817
 # 2    27623
@@ -71,13 +71,13 @@ print(pd.value_counts(y))
 # y = np.array(y).reshape(-1, 1)
 # y = np.array()
 
-y = np.reshape(y, (-1,1)) 
-print(y.shape)  
+# y = np.reshape(y, (-1,1)) 
+# print(y.shape)  
 
-ohe = OneHotEncoder(sparse = False)
-ohe.fit(y)
-y_ohe = ohe.transform(y)
-print(y_ohe.shape)  
+# ohe = OneHotEncoder(sparse = False)
+# ohe.fit(y)
+# y_ohe = ohe.transform(y)
+# print(y_ohe.shape)  
 
 
 
@@ -88,14 +88,18 @@ print(y_ohe.shape)
 
 x_train, x_test, y_train, y_test = train_test_split(
                                                     x,
-                                                    y_ohe,             
+                                                    y,             
                                                     train_size=0.86,
                                                     random_state=2024,
-                                                    stratify=y_ohe,
+                                                    stratify=y,
                                                     shuffle=True,
                                                     )
+print(np.unique(y_train, return_counts=True)) # (array([0, 1, 2, 3, 4, 5, 6]), array([14435, 24751, 23713, 11527,  6330,  1698,   358], dtype=int64))
+                                              # (array([0, 1, 2, 3, 4, 5, 6]), array([14424, 24782, 23756, 11484,  6324,  1681,   361], dtype=int64))
+
 from sklearn.preprocessing import MinMaxScaler, MaxAbsScaler
 from sklearn.preprocessing import StandardScaler, RobustScaler  # StandardScaler 표준편차 (편차 쏠릴때 사용) // 
+'''
 # scaler = MinMaxScaler() # 클래스 정의
 scaler = StandardScaler() # 클래스 정의
 # scaler = MaxAbsScaler() # 클래스 정의
@@ -163,6 +167,7 @@ print("걸린시간 : ", round(end_time - start_time, 2),"초")
 
 
 
+'''
 '''
 로스 :  0.41135647892951965
 acc :  0.8543984293937683

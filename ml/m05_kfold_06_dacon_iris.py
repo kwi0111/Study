@@ -9,6 +9,7 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 
+
 #1.데이터
 path = "c:\\_data\\dacon\\iris\\"
 
