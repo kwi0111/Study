@@ -167,11 +167,6 @@ CatBoost_params = {
 }
 
 
-
-
-
-
-
 model = CatBoostClassifier(**CatBoost_params)
 
 # 모델 학습
