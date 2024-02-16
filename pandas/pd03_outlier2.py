@@ -25,7 +25,7 @@ import matplotlib.pyplot as plt
 plt.boxplot(aaa)
 plt.show()
 
-#test
+#test 2
 ##### 과제
 '''
 pd04_1_따릉이.py
