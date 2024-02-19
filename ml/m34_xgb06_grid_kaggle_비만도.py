@@ -130,8 +130,9 @@ test_csv['MTRANS']= test_csv['MTRANS'].str.replace("Public_Transportation","3")
 test_csv['MTRANS']= test_csv['MTRANS'].str.replace("Walking","4")
 
 
-x = train_csv.drop('NObeyesdad', axis = 1)
+x = train_csv.drop(['NObeyesdad', 'SMOKE'], axis = 1)
 y = train_csv['NObeyesdad']
+test_csv = test_csv.drop(['SMOKE'], axis = 1)
 
 le = LabelEncoder()
 y = le.fit_transform(y)
@@ -142,13 +143,27 @@ y = le.fit_transform(y)
 x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=0.87, random_state=3, stratify=y)
 
 # 데이터 스케일링
-scaler = StandardScaler() 
+# scaler = StandardScaler() 
 # scaler = MaxAbsScaler()
 # scaler = MinMaxScaler()
 # scaler = RobustScaler() 
-x_train = scaler.fit_transform(x_train)
-x_test = scaler.transform(x_test)
-test_csv = scaler.transform(test_csv)
+# x_train = scaler.fit_transform(x_train)
+# x_test = scaler.transform(x_test)
+# test_csv = scaler.transform(test_csv)
+
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import Ridge
+poly = PolynomialFeatures(degree=2, interaction_only=True, include_bias=False)  
+poly.fit(x_train)  
+x_train = poly.transform(x_train)  
+x_test = poly.transform(x_test)
+test_csv = poly.transform(test_csv)
+ridge = Ridge()
+ridge.fit(x_train, y_train)
+# x_train = ridge.transform(x_train)  
+# x_test = ridge.transform(x_test)
+# test_csv = ridge.transform(test_csv)
+
 
 # XGBoost 모델 정의
 random_state = np.random.randint(1, 100)
@@ -157,18 +172,18 @@ XGBoost_params = {
     "num_class": 7,  # 클래스의 수를 설정합니다.
     "verbosity": 0,  # 출력 메시지 레벨을 설정합니다.
     "seed": random_state,  # 랜덤 시드를 설정합니다.
-    "learning_rate": 0.05,  # 학습률을 설정합니다.
-    "n_estimators": 2000,  # 부스팅 라운드 수를 설정합니다.
-    "colsample_bylevel": 0.8,  # 레벨별 컬럼 샘플링 비율을 설정합니다.
-    "min_child_weight": 5,  # 리프 노드에 필요한 최소 가중치 합을 설정합니다.
+    "learning_rate": 0.1,  # 학습률을 설정합니다.
+    "n_estimators": 3000,  # 부스팅 라운드 수를 설정합니다.
+    "colsample_bylevel": 0.7,  # 레벨별 컬럼 샘플링 비율을 설정합니다.
+    "min_child_weight": 3,  # 리프 노드에 필요한 최소 가중치 합을 설정합니다.
     "booster": "gbtree",  # 부스팅 방법을 설정합니다.
     "subsample": 0.9,  # 데이터 샘플링 비율을 설정합니다.
-    "max_depth": 10,  # 트리의 최대 깊이를 설정합니다.
-    "gamma": 0,  # 리프 노드의 추가 분할을 위한 최소 손실 감소를 설정합니다.
-    "reg_lambda": 7,  # L2 정규화 가중치를 설정합니다.
+    "max_depth": 8,  # 트리의 최대 깊이를 설정합니다.
+    "gamma": 0.1,  # 리프 노드의 추가 분할을 위한 최소 손실 감소를 설정합니다.
+    "reg_lambda": 5,  # L2 정규화 가중치를 설정합니다.
     "tree_method": "auto",  # 트리를 학습하기 위한 메소드를 설정합니다.
-    "num_parallel_tree": 1,  # 각 반복에 사용할 병렬 트리의 수를 설정합니다.
-    "nthread": -1  # 스레드 수를 설정합니다.
+    "num_parallel_tree": 2,  # 각 반복에 사용할 병렬 트리의 수를 설정합니다.
+    "nthread": 22  # 스레드 수를 설정합니다.
 }
 
 
@@ -176,7 +191,9 @@ model = XGBRFClassifier(**XGBoost_params)
 
 # 모델 학습
 start_time = time.time()
-model.fit(x_train, y_train)
+model.fit(x_train, y_train,
+          eval_set=[(x_train, y_train), (x_test, y_test)]
+          )
 end_time = time.time()
 
 # 테스트 데이터 예측
@@ -197,7 +214,20 @@ print("걸린시간 :", round(end_time - start_time, 2), "초")
 
 # 결과 저장
 dt = datetime.datetime.now()
-# submission_csv.to_csv(path + f"submit_{dt.day}day{dt.hour:2}{dt.minute:2}_acc_{accuracy:.4f}.csv", index=False)
+submission_csv.to_csv(path + f"submit_{dt.day}day{dt.hour:2}{dt.minute:2}_acc_{accuracy:.4f}.csv", index=False)
 
 # accuracy_score : 0.8947758429047795
 # 걸린시간 : 11.66 초
+
+
+# accuracy_score : 0.895516858095591
+# 걸린시간 : 46.02 초
+
+# accuracy_score : 0.8958873656909967
+# 걸린시간 : 42.31 초
+
+# accuracy_score : 0.8958873656909967
+# 걸린시간 : 30.48 초
+
+# accuracy_score : 0.8962578732864024
+# 걸린시간 : 42.63 초
