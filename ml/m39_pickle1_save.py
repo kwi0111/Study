@@ -55,7 +55,7 @@ print("최종 점수 : ", results)
 # pickle, joblib
 import pickle
 path = "C:/_data/_save/_pickle_test/"
-pickle.dump(model, open(path + 'm39_pickle1_save.dat', 'wb')) # dump 직렬화하여 저장 // 'wb' 이진 쓰기 모드
+pickle.dump(model, open(path + 'm39_pickle1_save.dat', 'wb')) # dump 직렬화하여 저장 // 'wb' 이진 쓰기 모드 // 판다스 넘파이 다 가능
 
 # r2 :  0.9060469609385955
 # 최종 점수1 :  0.9740740740740741

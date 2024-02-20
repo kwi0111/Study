@@ -58,12 +58,17 @@ print("최종 점수 : ", results)
 # pickle.dump(model, open(path + 'm39_pickle1_save.dat', 'wb')) # dump 직렬화하여 저장 // 'wb' 이진 쓰기 모드 //
 
 
-import joblib
-path = "C:/_data/_save/_joblib_test/"
-joblib.dump(model, path+"m40_joblib1_save.dat")
+# import joplib
+# path = "C:/_data/_save/_joplib_test/"
+# joplib.dump(model, path+"m40_joplib1_save.dat")
 
 
 # r2 :  0.9060469609385955
 # 최종 점수1 :  0.9740740740740741
 
+# print(xgb.__version__)
+import xgboost as xgb
+
+path = "C:/_data/_save/"
+model.save_model(path+"m41_xgb1_save_model.dat")
 
