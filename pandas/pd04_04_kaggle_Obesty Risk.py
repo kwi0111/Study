@@ -72,7 +72,6 @@ print(train_csv.head)
 # 20757    Male  26.680376  1.816547  118.134898                            yes  yes  3.000000  3.000000   Sometimes    no  2.003563  no  0.684487  0.713823  Sometimes  Public_Transportation      Obesity_Type_II
 
 print(train_csv.columns)
-'''
 x_labelEncoder = LabelEncoder()
 train_csv['Gender'] = x_labelEncoder.fit_transform(train_csv['Gender'])
 train_csv['family_history_with_overweight'] = x_labelEncoder.fit_transform(train_csv['family_history_with_overweight'])
@@ -95,6 +94,7 @@ test_csv['MTRANS'] = x_labelEncoder.fit_transform(test_csv['MTRANS'])
 
 y_labelEncoder = LabelEncoder()
 train_csv['NObeyesdad'] = y_labelEncoder.fit_transform(train_csv['NObeyesdad'])
+'''
 # print(train_csv.head)
  # 라벨 인코딩 후 train.head 확인
 <bound method NDFrame.head of        
