@@ -94,9 +94,9 @@ test_csv['MTRANS'] = x_labelEncoder.fit_transform(test_csv['MTRANS'])
 
 y_labelEncoder = LabelEncoder()
 train_csv['NObeyesdad'] = y_labelEncoder.fit_transform(train_csv['NObeyesdad'])
-'''
 # print(train_csv.head)
  # 라벨 인코딩 후 train.head 확인
+'''
 <bound method NDFrame.head of        
        Gender     Age      Height     Weight   family_history_with_overweight    FAVC    CVC       NCP     CAEC  SMOKE   CH2O    SCC    FAF       TUE      CALC   MTRANS    NObeyesdad
 id
@@ -342,6 +342,7 @@ dt = datetime.datetime.now()
 
 # print(param)
 print("ACC: ",acc)
+'''
 
 
 
@@ -380,4 +381,3 @@ print("ACC: ",acc)
 # Index(['id', 'NObeyesdad'], dtype='object')
 # ACC:  0.9135356454720617
 
-'''
