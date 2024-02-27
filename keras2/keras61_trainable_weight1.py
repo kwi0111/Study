@@ -36,8 +36,13 @@ model.trainable = False # ★★★ 전이학습 할때 쓴다.
 print(len(model.weights))   # 6
 print(len(model.trainable_weights)) # 0 // 훈련을 시키지 않겠다.
 
+print("===========================================")
+print(model.weights)
+print("===========================================")
+print(model.trainable_weights)
 
-
-
+model.summary()
+# Trainable params: 0
+# Non-trainable params: 17 // 훈련 자체를 안시킨다.
 
 
