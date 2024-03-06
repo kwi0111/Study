@@ -61,9 +61,9 @@ outliers_loc = outliers(x)
 print("이상치의 위치 :", outliers_loc)
 print((outliers_loc[0]))    #1513
 
-# import matplotlib.pyplot as plt
-# plt.boxplot(outliers_loc)
-# plt.show()
+import matplotlib.pyplot as plt
+plt.boxplot(outliers_loc)
+plt.show()
 
 
 x_train, x_test, y_train, y_test = train_test_split(x, y, train_size= 0.72,  shuffle= False, random_state= 6) #399 #1048 #6

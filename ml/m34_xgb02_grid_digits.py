@@ -23,7 +23,7 @@ print(pd.value_counts(y, sort=False))
 # 3    183
 # 4    181
 # 5    182
-# 6    181
+# 6    181w
 # 7    179
 # 8    174
 # 9    180
