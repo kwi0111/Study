@@ -33,6 +33,7 @@ train_csv['대출등급'] = le.fit_transform(train_csv['대출등급']) # 마지
 # x와 y를 분리
 x = train_csv.drop(['대출등급'], axis=1)
 y = train_csv['대출등급']
+
 x_train, x_test, y_train, y_test = train_test_split(
     x, y , random_state=777, train_size=0.8,
 )
