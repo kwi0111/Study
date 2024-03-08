@@ -20,6 +20,7 @@ datasets = load_breast_cancer()
 x = datasets.data
 y= datasets.target
 
+
 x_train, x_test, y_train, y_test = train_test_split(x, y, random_state=777, train_size= 0.8,  stratify=y)
 
 scaler = MinMaxScaler()
