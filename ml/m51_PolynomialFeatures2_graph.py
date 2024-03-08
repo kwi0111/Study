@@ -2,12 +2,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures # 다항 피쳐
+from sklearn.ensemble import RandomForestRegressor
 plt.rcParams['font.family'] = 'Malgun Gothic'
 
 #1.데이터
-np.random.seed(777)
+np.random.seed(789451212)
 x = 2 * np.random.rand(100,1) - 1   # -1 부터 1까지 난수 생성
-y = 3 * x**2 + 2* x + 1 + np.random.rand(100, 1)    # y = 3x^2 + 2x + 1 + 노이즈
+y = 3 * x**2 + 2 * x + 1 + np.random.rand(100, 1)    # y = 3x^2 + 2x + 1 + 노이즈
 # print(x)
 
 pf = PolynomialFeatures(
@@ -20,6 +21,8 @@ print(x_poly)
 #2. 모델
 model = LinearRegression()
 model2 = LinearRegression()
+# model = RandomForestRegressor()
+# model2 = RandomForestRegressor()
 
 
 #3. 훈련
@@ -37,6 +40,7 @@ x_plot = np.linspace(-1, 1, 100).reshape(-1, 1)
 x_plot_poly = pf.transform(x_plot)
 y_plot = model.predict(x_plot)
 y_plot2 = model2.predict(x_plot_poly)
+
 plt.plot(x_plot, y_plot, color='red', label='Polynomial Regression')
 plt.plot(x_plot, y_plot2, color='green', label='그냥')
 
