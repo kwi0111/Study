@@ -379,27 +379,27 @@ es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=EARLY_STO
 checkpoint = ModelCheckpoint(os.path.join(OUTPUT_DIR, CHECKPOINT_MODEL_NAME), monitor='loss', verbose=1,
 save_best_only=True, mode='auto', period=CHECKPOINT_PERIOD)
 
-# print('---model 훈련 시작---')
-# history = model.fit_generator(
-#     train_generator,
-#     steps_per_epoch=len(images_train) // BATCH_SIZE,
-#     validation_data=validation_generator,
-#     validation_steps=len(images_validation) // BATCH_SIZE,
-#     callbacks=[checkpoint, es],
-#     epochs=EPOCHS,
-#     workers=WORKERS,
-#     initial_epoch=INITIAL_EPOCH
-# )
-# print('---model 훈련 종료---')
+print('---model 훈련 시작---')
+history = model.fit_generator(
+    train_generator,
+    steps_per_epoch=len(images_train) // BATCH_SIZE,
+    validation_data=validation_generator,
+    validation_steps=len(images_validation) // BATCH_SIZE,
+    callbacks=[checkpoint, es],
+    epochs=EPOCHS,
+    workers=WORKERS,
+    initial_epoch=INITIAL_EPOCH
+)
+print('---model 훈련 종료---')
 
-# print('가중치 저장')
-# model_weights_output = os.path.join(OUTPUT_DIR, FINAL_WEIGHTS_OUTPUT)
-# model.save_weights(model_weights_output)
-# print("저장된 가중치 명: {}".format(model_weights_output))
+print('가중치 저장')
+model_weights_output = os.path.join(OUTPUT_DIR, FINAL_WEIGHTS_OUTPUT)
+model.save_weights(model_weights_output)
+print("저장된 가중치 명: {}".format(model_weights_output))
 
-# model = get_model(MODEL_NAME, input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_filters=N_FILTERS, n_channels=N_CHANNELS)
-# model.compile(optimizer = Adam(), loss = 'binary_crossentropy', metrics = ['accuracy'])
-# model.summary()
+model = get_model(MODEL_NAME, input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_filters=N_FILTERS, n_channels=N_CHANNELS)
+model.compile(optimizer = Adam(), loss = 'binary_crossentropy', metrics = ['accuracy'])
+model.summary()
 
 model.load_weights('D:\\_data\\dataset\\output\\model_unet_SAMPLE_line_final_weights.h5')
 
