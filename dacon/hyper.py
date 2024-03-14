@@ -7,6 +7,7 @@ import time
 import datetime
 from bayes_opt import BayesianOptimization
 from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import roc_auc_score
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -14,6 +15,18 @@ path = 'C:\\_data\\dacon\\hyper\\'
 train_csv = pd.read_csv(path + 'train.csv')
 submission_csv = pd.read_csv(path + "sample_submission.csv") 
 print(train_csv)
+# 데이터 전처리 과정이 끝난 학습 데이터 (추가 데이터 전처리 과정을 진행하지 않습니다.)
+# RF 모델 하이퍼파라미터를 제출 시, 해당 데이터로 자동적으로 학습됩니다.
+# person_id: 유저별 고유 아이디
+# Sex: 성별
+# past_login_total: 과거(5월 8일 이전)에 로그인한 총 횟수
+# past_1_month_login: 과거 1달간 로그인한 총 횟수
+# past_1_week_login: 과거 1주간 로그인한 총 횟수
+# sub_size: 과거에 데이콘 대회에서의 총 제출 수
+# email_type: 가입한 이메일 종류
+# phone_rat: 폰으로 접속한 비율
+# apple_rat: 애플 기기로 접속한 비율
+# login: 로그인 여부 
 
 # person_id 컬럼 제거
 x = train_csv.drop(['person_id', 'login'], axis=1)
@@ -69,16 +82,16 @@ from skopt import BayesSearchCV
 # }
 
 param_space = {
-    "n_estimators": (50, 1000),                    # 최적 값: 200
-    "max_depth": (3, 100),                         # 최적 값: None
-    "min_samples_split": (2, 100),                 # 최적 값: 2
-    "min_samples_leaf": (1, 50),                  # 최적 값: 1
-    "max_features": ['auto', 'sqrt', 'log2', None],  # 최적 값: 'auto'
-    "max_leaf_nodes": (2, 500),                    # 최적 값: None
-    "bootstrap": [True],                           # 고정 값: True
-    "min_impurity_decrease": [0],                  # 고정 값: 0
-    "min_weight_fraction_leaf": [0],               # 고정 값: 0
-    "criterion": ['gini'],                         # 고정 값: 'gini'
+    "n_estimators": (500, 1500),          # 트리의 개수 범위를 500에서 1500 사이로 변경
+    "max_depth": (10, 100),               # 트리의 최대 깊이 범위를 10에서 100 사이로 변경
+    "min_samples_split": (5, 50),       # 노드를 분할하기 위한 최소 샘플 수 범위를 5에서 50 사이로 변경
+    "min_samples_leaf": (2, 20),         # 리프 노드가 가져야 하는 최소 샘플 수 범위를 2에서 20 사이로 변경
+    "max_features": ['auto', 'sqrt', 'log2'],  # None 제외
+    "max_leaf_nodes": (20, 200),         # 리프 노드의 최대 수 범위를 20에서 200 사이로 변경
+    "bootstrap": [True],
+    "min_impurity_decrease": (0, 0.1),   # 범위 축소
+    "min_weight_fraction_leaf": (0, 0.3), # 범위 축소
+    "criterion": ['gini'],
 }
 
 # RandomForestClassifier 객체 생성
@@ -91,7 +104,7 @@ rf = RandomForestClassifier(random_state=42)
 model = BayesSearchCV(
     estimator=rf,
     search_spaces=param_space,
-    n_iter=50,
+    n_iter=100,
     cv=kfold,
     scoring='roc_auc',
     n_jobs=-1,
@@ -120,11 +133,15 @@ print("최적의 파라미터 : ", model.best_params_)
 print('best_score :', model.best_score_)
 print('score :', model.score(x, y))
 
+# 훈련 데이터로 AUC 계산
+y_pred_proba = model.predict_proba(x)[:, 1]
+train_auc = roc_auc_score(y, y_pred_proba)
+
 y_predict = model.predict(x)
-print("accuracy_score :", accuracy_score(y, y_predict))
 
 y_pred_best = model.best_estimator_.predict(x)
-print("최적튠 ACC :", accuracy_score(y, y_predict))
+# print("최적튠 ACC :", accuracy_score(y, y_predict))
+print("accuracy_score :", accuracy_score(y, y_predict))
 print("걸린시간 :", round(end_time - start_time, 2), "초")
 
 submission_csv.fillna(value="None", inplace=True)
@@ -138,6 +155,7 @@ print(submission_csv)
 dt = datetime.datetime.now()
 submission_csv.to_csv(path+f"submit_{dt.day}day{dt.hour:2}{dt.minute:2}_acc_{best_acc_score:4}.csv",index=False)
 
+print('AUC on training data:', train_auc)
 
 '''
 #   n_estimators criterion  max_depth  min_samples_split  min_samples_leaf  min_weight_fraction_leaf max_features max_leaf_nodes  min_impurity_decrease  bootstrap
@@ -175,6 +193,11 @@ BayesSearchCV 사용
 걸린시간 : 58.89 초
    n_estimators criterion  max_depth  min_samples_split  min_samples_leaf  min_weight_fraction_leaf max_features  max_leaf_nodes  min_impurity_decrease  bootstrap
 0           776      gini         59                 70                31                         0         None              88                      0       True
+
+걸린시간 : 170.98 초
+   n_estimators criterion  max_depth  min_samples_split  min_samples_leaf  min_weight_fraction_leaf max_features  max_leaf_nodes  min_impurity_decrease  bootstrap
+0          1000      gini         50                 20                10                  0.036766         log2              10                    0.0       True
+AUC on training data: 0.8492355622563281
 
 
 '''
