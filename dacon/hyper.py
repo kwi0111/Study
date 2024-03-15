@@ -34,8 +34,8 @@ y = train_csv['login']
 
 # x_train, x_test, y_train, y_test = train_test_split(x, y, shuffle= True, random_state= 42, train_size=0.75, stratify=y)
 
-scaler = StandardScaler()
-x = scaler.fit_transform(x)
+# scaler = StandardScaler()
+# x = scaler.fit_transform(x)
 # x_test = scaler.transform(x_test)
 
 
@@ -82,15 +82,15 @@ from skopt import BayesSearchCV
 # }
 
 param_space = {
-    "n_estimators": (500, 1500),          # 트리의 개수 범위를 500에서 1500 사이로 변경
-    "max_depth": (10, 100),               # 트리의 최대 깊이 범위를 10에서 100 사이로 변경
-    "min_samples_split": (5, 50),       # 노드를 분할하기 위한 최소 샘플 수 범위를 5에서 50 사이로 변경
-    "min_samples_leaf": (2, 20),         # 리프 노드가 가져야 하는 최소 샘플 수 범위를 2에서 20 사이로 변경
-    "max_features": ['auto', 'sqrt', 'log2'],  # None 제외
-    "max_leaf_nodes": (20, 200),         # 리프 노드의 최대 수 범위를 20에서 200 사이로 변경
+    "n_estimators": (100, 1500),          # 트리의 개수 범위를 100에서 1500 사이로 변경
+    "max_depth": (5, 200),               # 트리의 최대 깊이 범위를 5에서 200 사이로 변경
+    "min_samples_split": (2, 100),       # 노드를 분할하기 위한 최소 샘플 수 범위를 2에서 100 사이로 변경
+    "min_samples_leaf": (1, 50),         # 리프 노드가 가져야 하는 최소 샘플 수 범위를 1에서 50 사이로 변경
+    "max_features": ['auto', 'sqrt', 'log2', None],  # None을 포함한 다양한 옵션 유지
+    "max_leaf_nodes": (10, 500),         # 리프 노드의 최대 수 범위를 10에서 500 사이로 변경
     "bootstrap": [True],
-    "min_impurity_decrease": (0, 0.1),   # 범위 축소
-    "min_weight_fraction_leaf": (0, 0.3), # 범위 축소
+    "min_impurity_decrease": (0, 0.2),   # 불순도 감소 범위를 0에서 0.2로 변경
+    "min_weight_fraction_leaf": (0, 0.5), # 최소 가중치 비율 범위를 0에서 0.5로 변경
     "criterion": ['gini'],
 }
 
@@ -145,6 +145,8 @@ print("accuracy_score :", accuracy_score(y, y_predict))
 print("걸린시간 :", round(end_time - start_time, 2), "초")
 
 submission_csv.fillna(value="None", inplace=True)
+# 데이터 프레임에서 'max_features' 열이 빈 문자열인 경우 값을 'None'으로 설정
+submission_csv.loc[submission_csv['max_features'] == '', 'max_features'] = 'None'
 # 찾은 최적의 파라미터들을 제출 양식에 맞게 제출
 for param, value in best_params.items():
     if param in submission_csv.columns:
@@ -199,5 +201,23 @@ BayesSearchCV 사용
 0          1000      gini         50                 20                10                  0.036766         log2              10                    0.0       True
 AUC on training data: 0.8492355622563281
 
+걸린시간 : 224.56 초
+   n_estimators criterion  max_depth  min_samples_split  min_samples_leaf  min_weight_fraction_leaf max_features  max_leaf_nodes  min_impurity_decrease  bootstrap
+0          1500      gini         10                  5                20                       0.0         auto              20                    0.0       True
+AUC on training data: 0.8558964180967974
 
+걸린시간 : 168.6 초
+   n_estimators criterion  max_depth  min_samples_split  min_samples_leaf  min_weight_fraction_leaf max_features  max_leaf_nodes  min_impurity_decrease  bootstrap
+0           200      gini        100                  2                20                       0.0         auto             200                    0.0       True
+AUC on training data: 0.8558493032897915
+
+   n_estimators criterion  max_depth  min_samples_split  min_samples_leaf  min_weight_fraction_leaf max_features  max_leaf_nodes  min_impurity_decrease  bootstrap
+0          2000      gini         35                  3                 1                  0.043068         None              10                    0.0       True
+AUC on training data: 0.8596420452537721
+
+est Hyperparameters: {'bootstrap': 0, 'criterion': 0, 'max_depth': 127, 'max_features': 1, 'max_leaf_nodes': 322, 'min_impurity_decrease': 0.00028827455993945877, 'min_samples_leaf': 30, 'min_samples_split': 29, 'min_weight_fraction_leaf': 0.03650323306039522, 'n_estimators': 923}
+Best AUC: 0.8080262975475412
+
+   n_estimators  criterion  max_depth  min_samples_split  min_samples_leaf  min_weight_fraction_leaf  max_features  max_leaf_nodes  min_impurity_decrease  bootstrap
+0         874.0          0      171.0               12.0               6.0                  0.295092             1           374.0               0.071247          0
 '''
