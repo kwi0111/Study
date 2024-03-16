@@ -1,14 +1,26 @@
-# 10 kaggle 비만도
+# 1. 캔서 (이진)
+# 2. digits
+# 3. fetch_covtype
+# 4. dacon_wine
+# 5. dacon_대출
+# 6. kaggle_비만도
+
+# 7. load_diabetes
+# 8. california
+# 9. dacon 따릉이
+# 10. kaggle bike
+
+
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-import pandas as pd
-from sklearn.datasets import fetch_california_housing
+from sklearn.datasets import fetch_covtype
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+
 
 # GPU 를 되는지 안되는지 확인
 USE_CUDA = torch.cuda.is_available()
@@ -16,21 +28,14 @@ DEVICE = torch.device('cuda' if USE_CUDA else 'cpu')
 print('torch : ' , torch.__version__ , '사용 DEVICE : ', DEVICE)
 
 
-#1. 데이터 (분석, 정제, 전처리) // 판다스 
-path = "C:\\_data\\kaggle\\bike\\"
+#1. 데이터
+dataset = fetch_covtype()
+x = dataset.data
+y = dataset.target
+print(x.shape, y.shape)
 
-train_csv = pd.read_csv(path + "train.csv", index_col=0)
-test_csv = pd.read_csv(path + "test.csv", index_col=0)      # 날짜 데이터 인덱스로
-submission_csv = pd.read_csv(path + "samplesubmission.csv")
 
-# 결측치 처리
-print(train_csv.isna().sum())           # 데이터 프레임 결측치  없다.
-
-# x와 y를 분리
-x = train_csv.drop(['casual','registered','count'], axis=1)       # 행삭제 : axis = 0 // 열삭제 : axis = 1 // train_csv에 있는 'count'열 삭제 
-y = train_csv['count']
-
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42, shuffle=True)
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42, stratify=y, shuffle=True)
 
 scaler = StandardScaler()
 x_train = scaler.fit_transform(x_train)
@@ -38,40 +43,59 @@ x_test = scaler.transform(x_test)
 
 x_train = torch.FloatTensor(x_train).to(DEVICE)
 x_test = torch.FloatTensor(x_test).to(DEVICE)
-y_train = torch.FloatTensor(y_train.values).unsqueeze(1).to(DEVICE)
-y_test = torch.FloatTensor(y_test.values).unsqueeze(1).to(DEVICE)
-
+# y_train = torch.FloatTensor(y_train).unsqueeze(1).to(DEVICE)
+# y_test = torch.FloatTensor(y_test).unsqueeze(1).to(DEVICE)
+y_train = torch.LongTensor(y_train).to(DEVICE)
+y_test = torch.LongTensor(y_test).to(DEVICE)
 print(x_train.shape, y_train.shape)
 print(x_test.shape, y_test.shape)
-
+# torch.Size([1437, 64]) torch.Size([1437, 1])
+# torch.Size([360, 64]) torch.Size([360, 1])
 
 
 #2. 모델구성
-# model = Sequential()
-# model.add(Dense(1,input_dim = 1))
-# model = nn.Linear(1,1).to(DEVICE) # 인풋 , 아웃풋  # y = xw + b
-model = nn.Sequential(
-    nn.Linear(8, 256),
-    nn.BatchNorm1d(256),
-    nn.ReLU(),
-    nn.Dropout(0.2),
-    nn.Linear(256, 128),
-    nn.BatchNorm1d(128),
-    nn.ReLU(),
-    nn.Dropout(0.2),
-    nn.Linear(128, 64),
-    nn.BatchNorm1d(64),
-    nn.ReLU(),
-    nn.Dropout(0.2),
-    nn.Linear(64, 32),
-    nn.BatchNorm1d(32),
-    nn.ReLU(),
-    nn.Linear(32, 1)
-).to(DEVICE)
+# model = nn.Sequential(
+#     nn.Linear(30, 64),
+#     nn.Linear(64, 32),
+#     nn.ReLU(),
+#     nn.Linear(32, 16),
+#     nn.Linear(16, 7),
+#     nn.Linear(7, 1),
+#     nn.Sigmoid(),
+# ).to(DEVICE)
+
+# 클래스로 바꿀거임
+class Model(nn.Module):
+    def __init__(self, input_dim, output_dim):  # 이 클래스를 호출 되었을때 실행 // 통상 이 함수에 들어갈때 레이어의 정의 //  이 모델을 어떻게 정의할것인가?
+        # super().__init__()
+        super(Model, self).__init__()           #  같이 써줘야함, 아빠다.
+        self.linear1 = nn.Linear(input_dim, 64)
+        self.linear2 = nn.Linear(64, 32)
+        self.linear3 = nn.Linear(32, 16)
+        self.linear4 = nn.Linear(16, output_dim)    # 정의니까 순서 상관 x
+        self.sigmoid = nn.Sigmoid()
+        # self.softmax = nn.Softmax()
+        self.relu = nn.ReLU()
+        
+        return
+    
+    # 순전파!!!
+    def forward(self, input_size): # input size : 데이터 
+        x = self.linear1(input_size)
+        x = self.linear2(x)
+        x = self.relu(x)
+        x = self.linear3(x)
+        x = self.relu(x)
+        x = self.linear4(x)
+        # x = self.softmax(x)
+        return x
+    
+model = Model(54, 10).to(DEVICE)     # (인풋, 아웃풋)
+
 
 #3 컴파일
-criterion = nn.MSELoss()            
-optimizer = optim.Adam(model.parameters() , lr=0.0005 )  
+criterion = nn.CrossEntropyLoss()            
+optimizer = optim.Adam(model.parameters() , lr=0.001)  
 
 
 # model.fit(x,y,epochs = 100 , batch_size = 1)
@@ -95,12 +119,14 @@ def train(model , criterion , optimizer, x, y):
     optimizer.step()        # 가중치 수정(w 갱신)       -> 역전파 끝
     return loss.item()      # item을 쓰는 이유는 numpy 데이터로 뽑기위해서 똑같이 tensor 데이터는 맞음
     
-epochs = 5000
+epochs = 2000
 for epoch in range(1, epochs + 1) :
     loss = train(model, criterion, optimizer, x_train, y_train)
     print('epoch : {} , loss:{}'.format(epoch,loss))    # verbose
 
 print('==========================================================')
+
+
 
 #4. 평가, 예측
 # loss = model.evaluate(x,y)
@@ -109,7 +135,8 @@ def evaluate(model , criterion , x_test, y_test) :
     
     with torch.no_grad():
         y_predict = model(x_test)
-        loss2 = criterion(y_test , y_predict)
+        print(y_test.shape, y_predict.shape)
+        loss2 = criterion(y_predict, y_test)
     return loss2.item()
 
 loss2 = evaluate(model , criterion , x_test, y_test)
@@ -118,19 +145,16 @@ print('최종 loss : ', loss2)
 # y_predict = model(x_test)
 # 위의 결과 : device='cuda:0', grad_fn=<SigmoidBackward0>) 
 
-y_predict = model(x_test).cpu().detach().numpy()
+y_predict = torch.argmax(model(x_test) ,dim=1).cpu().detach().numpy()
 print(y_predict)
 # print(y_test) 
 # y_test 결과 : device='cuda:0'
-mse = mean_squared_error(y_test.cpu().numpy(), y_predict)
-rmse = np.sqrt(mse)
-r2 = r2_score(y_test.cpu().numpy(), y_predict)
+score = accuracy_score(y_test.cpu().numpy(), y_predict)
 
-print('Root Mean Squared Error (RMSE) : {:.4f}'.format(rmse))
-print('R2 Score : {:.4f}'.format(r2))
+print('Accuracy: {:.4f}'.format(score)) # Accuracy: 0.8118
 
-# Root Mean Squared Error (RMSE) : 150.3972
-# R2 Score : 0.3147
+
+
 
 
 
