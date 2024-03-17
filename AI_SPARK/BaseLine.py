@@ -269,7 +269,7 @@ def get_model(model_name, nClasses=1, input_height=128, input_width=128, n_filte
             n_filters     = n_filters,
             dropout       = dropout,
             batchnorm     = batchnorm,
-            n_channels    = n_channels
+            # n_channels    = n_channels
         )
     
 
@@ -302,11 +302,11 @@ test_meta = pd.read_csv('D:\\_data\\dataset\\test_meta.csv')
 save_name = 'sample_line'
 
 N_FILTERS = 16 # 필터수 지정
-N_CHANNELS = 3 # channel 지정
-EPOCHS = 1 # 훈련 epoch 지정
-BATCH_SIZE = 8 # batch size 지정
+# N_CHANNELS = 3 # channel 지정
+EPOCHS = 50 # 훈련 epoch 지정
+BATCH_SIZE = 44 # batch size 지정
 IMAGE_SIZE = (256, 256) # 이미지 크기 지정
-MODEL_NAME = 'unet' # 모델 이름
+MODEL_NAME = 'fcn' # 모델 이름
 RANDOM_STATE = 42 # seed 고정
 INITIAL_EPOCH = 0 # 초기 epoch
 
@@ -316,7 +316,7 @@ MASKS_PATH = 'D:\\_data\\dataset\\train_mask\\'
 
 # 가중치 저장 위치
 OUTPUT_DIR = 'D:\\_data\\dataset\\output\\'
-WORKERS = 4
+WORKERS = 16
 
 # 조기종료
 EARLY_STOP_PATIENCE = 5 
@@ -368,49 +368,51 @@ train_generator = generator_from_lists(images_train, masks_train, batch_size=BAT
 validation_generator = generator_from_lists(images_validation, masks_validation, batch_size=BATCH_SIZE, random_state=RANDOM_STATE, image_mode="762")
 
 
-def mean_iou(y_true, y_pred):
-    intersection = K.sum(K.abs(y_true * K.round(y_pred)), axis=[1, 2])
-    union = K.sum(y_true, axis=[1, 2]) + K.sum(K.round(y_pred), axis=[1, 2]) - intersection
-    iou = K.mean((intersection + K.epsilon()) / (union + K.epsilon()))
-    return iou
-# model 불러오기
-learning_rate = 0.01
-model = get_model(MODEL_NAME, input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_filters=N_FILTERS, n_channels=N_CHANNELS)
-model.compile(optimizer = Adam(learning_rate=learning_rate), loss = 'binary_crossentropy', metrics = ['miou'])
-model.summary()
+#miou metric
+Threshold  = 0.75
+def miou(y_true, y_pred, smooth=1e-6):
+    # 임계치 기준으로 이진화
+    y_pred = tf.cast(y_pred > Threshold , tf.float32)
+    
+    intersection = tf.reduce_sum(y_true * y_pred, axis=[1, 2, 3])
+    union = tf.reduce_sum(y_true, axis=[1, 2, 3]) + tf.reduce_sum(y_pred, axis=[1, 2, 3]) - intersection
+    
+    # mIoU 계산
+    iou = (intersection + smooth) / (union + smooth)
+    miou = tf.reduce_mean(iou)
+    return miou
 
+# model 불러오기
+learning_rate = 0.005
+model = get_model(MODEL_NAME, input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_filters=N_FILTERS,)
+model.compile(optimizer = Adam(learning_rate=learning_rate), loss = 'binary_crossentropy', metrics = ['accuracy', miou])
+# model.summary()
 
 # checkpoint 및 조기종료 설정
-es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=EARLY_STOP_PATIENCE)
-checkpoint = ModelCheckpoint(
-    os.path.join(OUTPUT_DIR, CHECKPOINT_MODEL_NAME),
-    monitor='loss',
-    verbose=0,
-    save_best_only=True,
-    mode='auto',
-    save_freq=CHECKPOINT_PERIOD
+es = EarlyStopping(monitor='val_miou', mode='max', verbose=1, patience=EARLY_STOP_PATIENCE, restore_best_weights=True)
+checkpoint = ModelCheckpoint(os.path.join(OUTPUT_DIR, CHECKPOINT_MODEL_NAME), monitor='val_miou', verbose=1,
+save_best_only=True, mode='max', period=CHECKPOINT_PERIOD)
+
+print('---model 훈련 시작---')
+history = model.fit_generator(
+    train_generator,
+    steps_per_epoch=len(images_train) // BATCH_SIZE,
+    validation_data=validation_generator,
+    validation_steps=len(images_validation) // BATCH_SIZE,
+    callbacks=[checkpoint, es],
+    epochs=EPOCHS,
+    workers=WORKERS,
+    initial_epoch=INITIAL_EPOCH
 )
+print('---model 훈련 종료---')
 
-# print('---model 훈련 시작---')
-# history = model.fit_generator(
-#     train_generator,
-#     steps_per_epoch=len(images_train) // BATCH_SIZE,
-#     validation_data=validation_generator,
-#     validation_steps=len(images_validation) // BATCH_SIZE,
-#     callbacks=[checkpoint, es],
-#     epochs=EPOCHS,
-#     workers=WORKERS,
-#     initial_epoch=INITIAL_EPOCH
-# )
-# print('---model 훈련 종료---')
-
-# print('가중치 저장')
-# model_weights_output = os.path.join(OUTPUT_DIR, FINAL_WEIGHTS_OUTPUT)
-# model.save_weights(model_weights_output)
-# print("저장된 가중치 명: {}".format(model_weights_output))
+print('가중치 저장')
+model_weights_output = os.path.join(OUTPUT_DIR, FINAL_WEIGHTS_OUTPUT)
+model.save_weights(model_weights_output)
+print("저장된 가중치 명: {}".format(model_weights_output))
 
 learning_rate = 0.01
-model = get_model(MODEL_NAME, input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_filters=N_FILTERS, n_channels=N_CHANNELS)
+model = get_model(MODEL_NAME, input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_filters=N_FILTERS, )
 model.compile(optimizer = Adam(learning_rate=learning_rate), loss = 'binary_crossentropy', metrics = ['accuracy'])
 model.summary()
 

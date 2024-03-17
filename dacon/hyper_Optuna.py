@@ -22,15 +22,20 @@ x_train, x_test, y_train, y_test = train_test_split(x,y,train_size=0.8, random_s
 
 def objectiveRF(trial):
     param = {
-    'n_estimators': trial.suggest_int('n_estimators', 100, 1000, 50),  # 100에서 1000까지 50 단위로 트리의 개수를 선택
-    'criterion': trial.suggest_categorical('criterion', ['gini', 'entropy']),  # 지니 불순도 또는 엔트로피를 사용할지 선택
-    'bootstrap': trial.suggest_categorical('bootstrap', [True, False]),  # 부트스트랩 샘플링을 사용할지 여부 선택
-    'max_depth': trial.suggest_int('max_depth', 4, 32),  # 트리의 최대 깊이를 4에서 32까지 선택
-    'random_state': RANDOM_STATE,  # 랜덤 시드 값으로 고정
-    'min_samples_split': trial.suggest_int('min_samples_split', 2, 100),  # 노드를 분할하기 위한 최소 샘플 수를 선택
-    'min_samples_leaf': trial.suggest_int('min_samples_leaf', 1, 100),  # 리프 노드가 가져야 하는 최소 샘플 수를 선택
-    'min_weight_fraction_leaf': trial.suggest_uniform('min_weight_fraction_leaf', 0, 0.5),  # 리프 노드의 최소 가중치 비율을 선택
-}
+        'n_estimators': trial.suggest_int('n_estimators', 100, 1500),
+        'criterion': trial.suggest_categorical('criterion', ['gini']),  # Hyperopt 예제에서는 'gini'만 사용했으므로
+        'bootstrap': trial.suggest_categorical('bootstrap', [True]),  # Hyperopt 예제에서는 True만 사용했으므로
+        'max_depth': trial.suggest_int('max_depth', 5, 200),
+        'min_samples_split': trial.suggest_int('min_samples_split', 2, 100),
+        'min_samples_leaf': trial.suggest_int('min_samples_leaf', 1, 50),
+        'max_features': trial.suggest_categorical('max_features', ['auto', 'sqrt', 'log2', None]),
+        'max_leaf_nodes': trial.suggest_int('max_leaf_nodes', 10, 500),
+        'min_impurity_decrease': trial.suggest_float('min_impurity_decrease', 0, 0.2),
+        'min_weight_fraction_leaf': trial.suggest_float('min_weight_fraction_leaf', 0, 0.5),
+        # 추가되지 않은 class_weight는 기존 제안대로 사용
+        'class_weight': trial.suggest_categorical('class_weight', [None, 'balanced']),
+        'random_state': RANDOM_STATE  # 고정 랜덤 시드
+    }
     
     # 학습 모델 생성
     model = RandomForestClassifier(**param)

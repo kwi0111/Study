@@ -220,4 +220,10 @@ Best AUC: 0.8080262975475412
 
    n_estimators  criterion  max_depth  min_samples_split  min_samples_leaf  min_weight_fraction_leaf  max_features  max_leaf_nodes  min_impurity_decrease  bootstrap
 0         874.0          0      171.0               12.0               6.0                  0.295092             1           374.0               0.071247          0
+
+{'n_estimators': 1371, 'criterion': 'gini', 'bootstrap': True, 'max_depth': 222, 'min_samples_split': 8, 'min_samples_leaf': 3, 'max_features': 'log2', 'max_leaf_nodes': 496, 'min_impurity_decrease': 0.00047994305574976335, 'min_weight_fraction_leaf': 0.022486087636199574}
+score:  0.919022154316272
+AUC:   0.8375864262241015
+
+
 '''
