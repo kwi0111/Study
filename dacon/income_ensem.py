@@ -220,24 +220,32 @@ class EnsembleRegressor:
 
 def objective(trial):
     xgb_params = {
+        # 기존 파라미터 유지하며 세밀한 조정
         'n_estimators': trial.suggest_int('xgb_n_estimators', 100, 1200),
         'max_depth': trial.suggest_int('xgb_max_depth', 3, 12),
         'learning_rate': trial.suggest_float('xgb_learning_rate', 0.01, 0.3),
         'min_child_weight': trial.suggest_int('xgb_min_child_weight', 1, 10),
-        'gamma': trial.suggest_float('xgb_gamma', 0.0, 0.5),
-        'subsample': trial.suggest_float('xgb_subsample', 0.5, 1.0),
-        'colsample_bytree': trial.suggest_float('xgb_colsample_bytree', 0.5, 1.0),
-        'reg_alpha': trial.suggest_float('xgb_reg_alpha', 0.0, 1.0),
-        'reg_lambda': trial.suggest_float('xgb_reg_lambda', 1.0, 5.0)
+        'gamma': trial.suggest_float('xgb_gamma', 0.1, 1.0),
+        'subsample': trial.suggest_float('xgb_subsample', 0.6, 0.9),
+        'colsample_bytree': trial.suggest_float('xgb_colsample_bytree', 0.6, 0.9),
+        'reg_alpha': trial.suggest_float('xgb_reg_alpha', 0.01, 0.1),
+        'reg_lambda': trial.suggest_float('xgb_reg_lambda', 1.0, 3.0),
+        'max_delta_step': trial.suggest_int('xgb_max_delta_step', 0, 5),
+        # 새로운 파라미터 추가
+        'eval_metric': trial.suggest_categorical('xgb_eval_metric', ['rmse', 'mae']),
     }
+    
     catboost_params = {
         'iterations': trial.suggest_int('catboost_iterations', 100, 1200),
-        'depth': trial.suggest_int('catboost_depth', 3, 12),
+        'depth': trial.suggest_int('catboost_depth', 4, 10),
         'learning_rate': trial.suggest_float('catboost_learning_rate', 0.01, 0.3),
-        'l2_leaf_reg': trial.suggest_float('catboost_l2_leaf_reg', 1, 10),
-        'border_count': trial.suggest_int('catboost_border_count', 32, 255),
+        'l2_leaf_reg': trial.suggest_float('catboost_l2_leaf_reg', 3, 20),
+        'border_count': trial.suggest_int('catboost_border_count', 50, 200),
         'bagging_temperature': trial.suggest_float('catboost_bagging_temperature', 0.0, 1.0),
         'random_strength': trial.suggest_float('catboost_random_strength', 1e-9, 10),
+        'one_hot_max_size': trial.suggest_int('catboost_one_hot_max_size', 2, 20),
+        # 새로운 파라미터 추가
+        'task_type': 'GPU',  # GPU 사용 설정, GPU가 없을 경우 'CPU'로 변경
     }
     
     xgb_weight = trial.suggest_float('xgb_weight', 0, 1)
@@ -260,7 +268,7 @@ def objective(trial):
     # return rmse
 
 study = optuna.create_study(direction='minimize')
-study.optimize(objective, n_trials=500) #timeout=600)  # 100회 시도하거나, 총 600초가 경과하면 종료
+study.optimize(objective, n_trials=100) #timeout=600)  # 100회 시도하거나, 총 600초가 경과하면 종료
 
 print('Number of finished trials:', len(study.trials))
 print('Best trial:', study.best_trial.params)
