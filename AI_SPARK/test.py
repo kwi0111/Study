@@ -27,12 +27,13 @@ import numpy as np
 from keras import backend as K
 from sklearn.model_selection import train_test_split
 import joblib
+import numpy as np
 
 MAX_PIXEL_VALUE = 65535 # 이미지 정규화를 위한 픽셀 최대값
 
 class threadsafe_iter:
     """
-    데이터 불러올때, 호출 직렬화
+    데이터 불러올떼, 호출 직렬화
     """
     def __init__(self, it):
         self.it = it
@@ -107,102 +108,105 @@ def generator_from_lists(images_path, masks_path, batch_size=32, shuffle = True,
                 images = []
                 masks = []
                 
-                
+
 # 모델 정의
-from keras.layers import Input, Conv2D, AveragePooling2D, UpSampling2D, Concatenate, Activation, BatchNormalization
-from keras.models import Model
-from keras.optimizers import Adam
-from keras.applications import ResNet50
 
-def ASPP(inputs):
-    shape = inputs.shape
-
-    y_pool = AveragePooling2D(pool_size=(shape[1], shape[2]), name='average_pooling')(inputs)
-    y_pool = Conv2D(filters=256, kernel_size=1, padding='same', use_bias=False)(y_pool)
-    y_pool = BatchNormalization(name=f'bn_1')(y_pool)
-    y_pool = Activation('relu', name=f'relu_1')(y_pool)
-    y_pool = UpSampling2D((shape[1], shape[2]), interpolation="bilinear")(y_pool)
-
-    y_1 = Conv2D(filters=256, kernel_size=1, dilation_rate=1, padding='same', use_bias=False)(inputs)
-    y_1 = BatchNormalization()(y_1)
-    y_1 = Activation('relu')(y_1)
-
-    y_6 = Conv2D(filters=256, kernel_size=3, dilation_rate=6, padding='same', use_bias=False)(inputs)
-    y_6 = BatchNormalization()(y_6)
-    y_6 = Activation('relu')(y_6)
-
-    y_12 = Conv2D(filters=256, kernel_size=3, dilation_rate=12, padding='same', use_bias=False)(inputs)
-    y_12 = BatchNormalization()(y_12)
-    y_12 = Activation('relu')(y_12)
-
-    y_18 = Conv2D(filters=256, kernel_size=3, dilation_rate=18, padding='same', use_bias=False)(inputs)
-    y_18 = BatchNormalization()(y_18)
-    y_18 = Activation('relu')(y_18)
-
-    y = Concatenate()([y_pool, y_1, y_6, y_12, y_18])
-
-    y = Conv2D(filters=256, kernel_size=1, dilation_rate=1, padding='same', use_bias=False)(y)
-    y = BatchNormalization()(y)
-    y = Activation('relu')(y)
-    return y
-
-def DeepLabV3Plus(input_height=256, input_width=256, n_channels=3, n_classes=1):
-    inputs = Input((input_height, input_width, n_channels))
-
-    base_model = ResNet50(weights='imagenet', include_top=False, input_tensor=inputs)
-
-    # Pre-trained ResNet50 Output
-    image_features = base_model.get_layer('conv4_block6_out').output
-    x_a = ASPP(image_features)
-    x_a = UpSampling2D((4, 4), interpolation="bilinear")(x_a)
-
-    # Low-level features 가져오기
-    x_b = base_model.get_layer('conv2_block2_out').output
-    x_b = Conv2D(filters=48, kernel_size=1, padding='same', use_bias=False)(x_b)
-    x_b = BatchNormalization()(x_b)
-    x_b = Activation('relu')(x_b)
-
-    x = Concatenate()([x_a, x_b])
-
-    x = Conv2D(filters=256, kernel_size=3, padding='same', activation='relu', use_bias=False)(x)
+def conv2d_batchnorm(x, filters, kernel_size=(2, 2), activation='relu', padding='same'):
+    x = Conv2D(filters, kernel_size, padding=padding)(x)
     x = BatchNormalization()(x)
-    x = Activation('relu')(x)
+    if activation == 'relu':
+        x = Activation('relu')(x)
+    return x
 
-    x = Conv2D(filters=256, kernel_size=3, padding='same', activation='relu', use_bias=False)(x)
+def multiresblock(x, input_features, corresponding_unet_filters, alpha=1.67):
+    W = corresponding_unet_filters * alpha
+
+    temp = conv2d_batchnorm(x, int(W*0.167) + int(W*0.333) + int(W*0.5), kernel_size=(1, 1), activation=None)
+    a = conv2d_batchnorm(x, int(W*0.167), kernel_size=(3, 3), activation='relu')
+    b = conv2d_batchnorm(a, int(W*0.333), kernel_size=(3, 3), activation='relu')
+    c = conv2d_batchnorm(b, int(W*0.5), kernel_size=(3, 3), activation='relu')
+    x = Concatenate(axis=-1)([a, b, c])
     x = BatchNormalization()(x)
+    x = Add()([temp, x])
+    x = BatchNormalization()(x)
+    return x
+
+def respath(x, input_features, filters, respath_length):
+    shortcut = conv2d_batchnorm(x, filters, kernel_size=(1, 1), activation=None)
+    x = conv2d_batchnorm(x, filters, kernel_size=(3, 3), activation='relu')
+    x = Add()([shortcut, x])
     x = Activation('relu')(x)
-    x = UpSampling2D((4, 4), interpolation="bilinear")(x)
+    for _ in range(respath_length):
+        shortcut = conv2d_batchnorm(x, filters, kernel_size=(1, 1), activation=None)
+        x = conv2d_batchnorm(x, filters, kernel_size=(3, 3), activation='relu')
+        x = Add()([shortcut, x])
+        x = Activation('relu')(x)
+    return x
 
-    # Outputs
-    x = Conv2D(n_classes, (1, 1), name='output_layer')(x)
-    x = Activation('sigmoid')(x)
+def MultiResUNet_model(input_shape=(None, None, 3), filters=32, nclasses=1):
+    inputs = Input(shape=input_shape)
+    alpha = 1.67
+    
+    # Encoding Path
+    multires1 = multiresblock(inputs, input_shape[-1], filters, alpha)
+    pool1 = MaxPooling2D(pool_size=(2, 2))(multires1)
+    respath1 = respath(multires1, input_shape[-1], filters, 4)
+    
+    multires2 = multiresblock(pool1, filters, filters*2, alpha)
+    pool2 = MaxPooling2D(pool_size=(2, 2))(multires2)
+    respath2 = respath(multires2, filters, filters*2, 3)
+    
+    multires3 = multiresblock(pool2, filters*2, filters*4, alpha)
+    pool3 = MaxPooling2D(pool_size=(2, 2))(multires3)
+    respath3 = respath(multires3, filters*2, filters*4, 2)
+    
+    multires4 = multiresblock(pool3, filters*4, filters*8, alpha)
+    pool4 = MaxPooling2D(pool_size=(2, 2))(multires4)
+    respath4 = respath(multires4, filters*4, filters*8, 1)
+    
+    # Bridge
+    multires5 = multiresblock(pool4, filters*8, filters*16, alpha)
+    
+    # Decoding Path
+    up6 = Concatenate()([UpSampling2D(size=(2, 2))(multires5), respath4])
+    multires6 = multiresblock(up6, filters*16, filters*8, alpha)
+    
+    up7 = Concatenate()([UpSampling2D(size=(2, 2))(multires6), respath3])
+    multires7 = multiresblock(up7, filters*8, filters*4, alpha)
+    
+    up8 = Concatenate()([UpSampling2D(size=(2, 2))(multires7), respath2])
+    multires8 = multiresblock(up8, filters*4, filters*2, alpha)
+    
+    up9 = Concatenate()([UpSampling2D(size=(2, 2))(multires8), respath1])
+    multires9 = multiresblock(up9, filters*2, filters, alpha)
+    
+    # Output Layer
+    if nclasses > 1:
+        outputs = Conv2D(nclasses, (1, 1), activation='softmax')(multires9)
+    else:
+        outputs = Activation('sigmoid')(Conv2D(1, (1, 1))(multires9))
 
-    # Model
-    model = Model(inputs=inputs, outputs=x)
+    model = Model(inputs, outputs)
     return model
 
-def iou(y_true, y_pred):
-    def f(y_true, y_pred):
-        intersection = (y_true * y_pred).sum()
-        union = y_true.sum() + y_pred.sum() - intersection
-        x = (intersection + 1e-15) / (union + 1e-15)
-        x = x.astype(np.float32)
-        return x
-    return tf.numpy_function(f, [y_true, y_pred], tf.float32)
-
-if __name__ == "__main__":
-    IMAGE_SIZE = (256, 256)  # 예시 크기, 실제 프로젝트에 맞게 조정
-    N_CHANNELS = 3
-    n_classes = 1  # 이진 분류 문제를 가정, 멀티 클래스의 경우 수정 필요
-
-    model = DeepLabV3Plus(input_height=256, input_width=256, n_channels=3, n_classes=1)
-
-    model.compile(optimizer=Adam(learning_rate=0.001), loss='binary_crossentropy', metrics=['accuracy', iou])
-    model.summary()
 
 
 
+def get_model(model_name, nClasses=1, input_height=128, input_width=128, n_filters = 16, dropout = 0.1, batchnorm = True, n_channels=10):
+    if model_name == 'MultiResUNet':
+        model = MultiResUNet_model
+
+    return model(
+            # nClasses      = nClasses,  
+            # input_height  = input_height, 
+            # input_width   = input_width,
+            # n_filters     = n_filters,
+            # dropout       = dropout,
+            # batchnorm     = batchnorm,
+            # n_channels    = n_channels
+        )
     
+
 # 두 샘플 간의 유사성 metric
 def dice_coef(y_true, y_pred, smooth=1):
     intersection = K.sum(y_true * y_pred, axis=[1,2,3])
@@ -222,28 +226,22 @@ def pixel_accuracy (y_true, y_pred):
     return pixel_accuracy    
 
 
-
-"""&nbsp; 
-
-## parameter 설정
-"""
-
 # 사용할 데이터의 meta정보 가져오기
 
-train_meta = pd.read_csv('d:/_data/dataset/train_meta.csv')
-test_meta = pd.read_csv('d:/_data/dataset/test_meta.csv')
+train_meta = pd.read_csv('D:\\_data\\dataset\\train_meta.csv')
+test_meta = pd.read_csv('D:\\_data\\dataset\\test_meta.csv')
 
 
 # 저장 이름
-save_name = 'base_line'
+save_name = 'sample_line'
 
 N_FILTERS = 16 # 필터수 지정
 N_CHANNELS = 3 # channel 지정
 EPOCHS = 200 # 훈련 epoch 지정
-BATCH_SIZE = 12 # batch size 지정
+BATCH_SIZE = 6 # batch size 지정
 IMAGE_SIZE = (256, 256) # 이미지 크기 지정
-MODEL_NAME = 'DeepLabV3Plus' # 모델 이름
-RANDOM_STATE = 42 # seed 고정  // 원래 47
+MODEL_NAME = 'MultiResUNet' # 모델 이름
+RANDOM_STATE = 42 # seed 고정
 INITIAL_EPOCH = 0 # 초기 epoch
 
 # 데이터 위치
@@ -252,15 +250,15 @@ MASKS_PATH = 'D:\\_data\\dataset\\train_mask\\'
 
 # 가중치 저장 위치
 OUTPUT_DIR = 'D:\\_data\\dataset\\output\\'
-WORKERS = 22    # 원래 4 // (코어 / 2 ~ 코어) 
+WORKERS = 22
 
 # 조기종료
-EARLY_STOP_PATIENCE = 20
+EARLY_STOP_PATIENCE = 15
 
 # 중간 가중치 저장 이름
 CHECKPOINT_PERIOD = 5
 CHECKPOINT_MODEL_NAME = 'checkpoint-{}-{}-epoch_{{epoch:02d}}.hdf5'.format(MODEL_NAME, save_name)
-
+ 
 # 최종 가중치 저장 이름
 FINAL_WEIGHTS_OUTPUT = 'model_{}_{}_final_weights.h5'.format(MODEL_NAME, save_name)
 
@@ -304,28 +302,33 @@ train_generator = generator_from_lists(images_train, masks_train, batch_size=BAT
 validation_generator = generator_from_lists(images_validation, masks_validation, batch_size=BATCH_SIZE, random_state=RANDOM_STATE, image_mode="762")
 
 
-# model 불러오기
-learning_rate = 0.001
-model = DeepLabV3Plus(input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_channels=N_CHANNELS, n_classes=1)
-model.compile(optimizer=Adam(learning_rate=0.001), loss='binary_crossentropy', metrics=['accuracy', iou])
+#miou metric
+Threshold  = 0.5
+def miou(y_true, y_pred, smooth=1e-6):
+    # 임계치 기준으로 이진화
+    y_pred = tf.cast(y_pred > Threshold , tf.float32)
+    
+    intersection = tf.reduce_sum(y_true * y_pred, axis=[1, 2, 3])
+    union = tf.reduce_sum(y_true, axis=[1, 2, 3]) + tf.reduce_sum(y_pred, axis=[1, 2, 3]) - intersection
+    
+    # mIoU 계산
+    iou = (intersection + smooth) / (union + smooth)
+    miou = tf.reduce_mean(iou)
+    return miou
 
+# model 불러오기
+learning_rate = 0.0001
+model = get_model(MODEL_NAME, input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_filters=N_FILTERS,)
+model.compile(optimizer = Adam(learning_rate=learning_rate), loss = 'binary_crossentropy', metrics = ['accuracy', miou])
+# model.summary()
 
 # checkpoint 및 조기종료 설정
-es = EarlyStopping(monitor='iou', mode='max', verbose=1, patience=EARLY_STOP_PATIENCE, restore_best_weights=True)
-checkpoint = ModelCheckpoint(os.path.join(OUTPUT_DIR, CHECKPOINT_MODEL_NAME), monitor='iou', verbose=1,
+es = EarlyStopping(monitor='val_miou', mode='max', verbose=1, patience=EARLY_STOP_PATIENCE, restore_best_weights=True)
+checkpoint = ModelCheckpoint(os.path.join(OUTPUT_DIR, CHECKPOINT_MODEL_NAME), monitor='val_miou', verbose=1,
 save_best_only=True, mode='max', period=CHECKPOINT_PERIOD)
 
-# rlr
-# rlr = ReduceLROnPlateau(monitor='val_loss', patience=10, verbose=0, mode='auto', factor=0.5)
-
-
-"""&nbsp;
-
-## model 훈련
-"""
-
 print('---model 훈련 시작---')
-history = model.fit(
+history = model.fit_generator(
     train_generator,
     steps_per_epoch=len(images_train) // BATCH_SIZE,
     validation_data=validation_generator,
@@ -337,46 +340,26 @@ history = model.fit(
 )
 print('---model 훈련 종료---')
 
-"""&nbsp;
-
-## model save
-"""
-
 print('가중치 저장')
 model_weights_output = os.path.join(OUTPUT_DIR, FINAL_WEIGHTS_OUTPUT)
 model.save_weights(model_weights_output)
 print("저장된 가중치 명: {}".format(model_weights_output))
 
-"""## inference
+learning_rate = 0.0001
+model = get_model(MODEL_NAME, input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_filters=N_FILTERS, )
+model.compile(optimizer = Adam(learning_rate=learning_rate), loss = 'binary_crossentropy', metrics = ['accuracy'])
+model.summary()
 
-- 학습한 모델 불러오기
-"""
-learning_rate = 0.001
-model = DeepLabV3Plus(input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_channels=N_CHANNELS, n_classes=1)
-model.compile(optimizer = Adam(learning_rate=learning_rate), loss = 'binary_crossentropy', metrics = ['accuracy', iou])
-# model.summary()
-
-model.load_weights('D:\\_data\\dataset\\output\\model_DeepLabV3Plus_base_line_final_weights.h5')
-
-"""## 제출 Predict
-- numpy astype uint8로 지정
-- 반드시 pkl로 저장
-
-"""
+model.load_weights('D:\\_data\\dataset\\output\\model_MultiResUNet_sample_line_final_weights.h5')
 
 y_pred_dict = {}
 
 for i in test_meta['test_img']:
-    img = get_img_762bands(f'd:/_data/dataset/test_img/{i}')
-    y_pred = model.predict(np.array([img]), batch_size=1)
-
-    y_pred = np.where(y_pred[0, :, :, 0] > 0.5, 1, 0) # 임계값 처리
+    img = get_img_762bands(f'D:\\_data\\dataset\\test_img\\{i}')
+    y_pred = model.predict(np.array([img]), batch_size=1, verbose=0)
+    
+    y_pred = np.where(y_pred[0, :, :, 0] > 0.25, 1, 0) # 임계값 처리
     y_pred = y_pred.astype(np.uint8)
     y_pred_dict[i] = y_pred
 
-from datetime import datetime
-dt = datetime.now()
-joblib.dump(y_pred_dict, f'D:\\_data\\dataset\\output\\y_pred_{dt.day}_{dt.hour}_{dt.minute}.pkl')
-
-# https://aifactory.space/task/2723/submit
-
+joblib.dump(y_pred_dict, 'D:\\_data\\dataset\\output\\y_pred.pkl')

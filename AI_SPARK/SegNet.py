@@ -28,6 +28,7 @@ from keras import backend as K
 from sklearn.model_selection import train_test_split
 import joblib
 import numpy as np
+from keras.metrics import IoU
 
 from keras.models import Model
 from keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, concatenate, Dropout, BatchNormalization, Activation, Add
@@ -202,25 +203,25 @@ def residual_block(input_tensor, n_filters, kernel_size=3, batchnorm=True):
     x = Add()([x, shortcut])
     return x
 
-def segnet(input_size=(256, 256, 3), n_classes=1, n_filters=64, dropout_rate=0.5):
+def segnet(input_size=(256, 256, 3), n_classes=1, n_filters=64, dropout=0.1):
     inputs = Input(input_size)
     
     # Encoder
     c1 = residual_block(inputs, n_filters * 1, kernel_size=3, batchnorm=True)
     p1 = MaxPooling2D((2, 2))(c1)
-    d1 = Dropout(dropout_rate)(p1)
+    d1 = Dropout(dropout)(p1)
     
     c2 = residual_block(d1, n_filters * 2, kernel_size=3, batchnorm=True)
     p2 = MaxPooling2D((2, 2))(c2)
-    d2 = Dropout(dropout_rate)(p2)
+    d2 = Dropout(dropout)(p2)
     
     c3 = residual_block(d2, n_filters * 4, kernel_size=3, batchnorm=True)
     p3 = MaxPooling2D((2, 2))(c3)
-    d3 = Dropout(dropout_rate)(p3)
+    d3 = Dropout(dropout)(p3)
     
     c4 = residual_block(d3, n_filters * 8, kernel_size=3, batchnorm=True)
     p4 = MaxPooling2D((2, 2))(c4)
-    d4 = Dropout(dropout_rate)(p4)
+    d4 = Dropout(dropout)(p4)
     
     # Bridge
     c5 = conv_block(d4, n_filters * 16, kernel_size=3, batchnorm=True)
@@ -236,11 +237,11 @@ def segnet(input_size=(256, 256, 3), n_classes=1, n_filters=64, dropout_rate=0.5
     
     u8 = UpSampling2D((2, 2))(c7)
     u8 = concatenate([u8, c2])
-    c8 = conv_block(u8, n_filters * 2, kernel_size=3, batchnorm=True)
+    c8 = conv_block(u8, n_filters * 2, kernel_size=2, batchnorm=True)
     
     u9 = UpSampling2D((2, 2))(c8)
     u9 = concatenate([u9, c1], axis=3)
-    c9 = conv_block(u9, n_filters * 1, kernel_size=3, batchnorm=True)
+    c9 = conv_block(u9, n_filters * 1, kernel_size=2, batchnorm=True)
     
     outputs = Conv2D(n_classes, (1, 1), activation='sigmoid')(c9)
     model = Model(inputs=[inputs], outputs=[outputs])
@@ -248,11 +249,11 @@ def segnet(input_size=(256, 256, 3), n_classes=1, n_filters=64, dropout_rate=0.5
     return model
 
 
-def get_model(model_name, input_height=128, input_width=128, n_filters=16, dropout=0.1, batchnorm=True, n_channels=3):
+def get_model(model_name, input_height=128, input_width=128, n_filters=16, dropout=0.05, batchnorm=True, n_channels=3):
     if model_name == 'unet':
         model = get_unet(nClasses=1, input_height=input_height, input_width=input_width, n_filters=n_filters, dropout=dropout, batchnorm=batchnorm, n_channels=n_channels)
     elif model_name == 'segnet':
-        model = segnet(input_size=(input_height, input_width, n_channels), n_classes=1, n_filters=n_filters)
+        model = segnet(input_size=(input_height, input_width, n_channels), n_classes=1, n_filters=n_filters, dropout=dropout, batchnorm=True)
 
     return model
     
@@ -288,7 +289,7 @@ save_name = 'sample_line'
 N_FILTERS = 16 # 필터수 지정
 N_CHANNELS = 3 # channel 지정
 EPOCHS = 30 # 훈련 epoch 지정
-BATCH_SIZE = 16 # batch size 지정
+BATCH_SIZE = 24 # batch size 지정
 IMAGE_SIZE = (256, 256) # 이미지 크기 지정
 MODEL_NAME = 'segnet' # 모델 이름
 RANDOM_STATE = 42 # seed 고정
@@ -300,7 +301,7 @@ MASKS_PATH = 'D:\\_data\\dataset\\train_mask\\'
 
 # 가중치 저장 위치
 OUTPUT_DIR = 'D:\\_data\\dataset\\output\\'
-WORKERS = 16
+WORKERS = 22
 
 # 조기종료
 EARLY_STOP_PATIENCE = 5 
@@ -352,24 +353,25 @@ train_generator = generator_from_lists(images_train, masks_train, batch_size=BAT
 validation_generator = generator_from_lists(images_validation, masks_validation, batch_size=BATCH_SIZE, random_state=RANDOM_STATE, image_mode="762")
 
 
-#miou metric
-Threshold  = 0.75
-def miou(y_true, y_pred, smooth=1e-6):
-    # 임계치 기준으로 이진화
-    y_pred = tf.cast(y_pred > Threshold , tf.float32)
+
+# #miou metric
+# Threshold  = 0.75
+# def miou(y_true, y_pred, smooth=1e-6):
+#     # 임계치 기준으로 이진화
+#     y_pred = tf.cast(y_pred > Threshold , tf.float32)
     
-    intersection = tf.reduce_sum(y_true * y_pred, axis=[1, 2, 3])
-    union = tf.reduce_sum(y_true, axis=[1, 2, 3]) + tf.reduce_sum(y_pred, axis=[1, 2, 3]) - intersection
+#     intersection = tf.reduce_sum(y_true * y_pred, axis=[1, 2, 3])
+#     union = tf.reduce_sum(y_true, axis=[1, 2, 3]) + tf.reduce_sum(y_pred, axis=[1, 2, 3]) - intersection
     
-    # mIoU 계산
-    iou = (intersection + smooth) / (union + smooth)
-    miou = tf.reduce_mean(iou)
-    return miou
+#     # mIoU 계산
+#     iou = (intersection + smooth) / (union + smooth)
+#     miou = tf.reduce_mean(iou)
+#     return miou
 
 # model 불러오기
-learning_rate = 0.05
+learning_rate = 0.01
 model = get_model(MODEL_NAME, input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_filters=N_FILTERS,)
-model.compile(optimizer = Adam(learning_rate=learning_rate), loss = 'binary_crossentropy', metrics = ['accuracy', miou])
+model.compile(optimizer = Adam(learning_rate=learning_rate), loss = 'binary_crossentropy', metrics = ['accuracy', iou])
 # model.summary()
 
 # checkpoint 및 조기종료 설정
@@ -397,9 +399,9 @@ model_weights_output = os.path.join(OUTPUT_DIR, FINAL_WEIGHTS_OUTPUT)
 model.save_weights(model_weights_output)
 print("저장된 가중치 명: {}".format(model_weights_output))
 
-learning_rate = 0.05
+learning_rate = 0.01
 model = get_model(MODEL_NAME, input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_filters=N_FILTERS, )
-model.compile(optimizer = Adam(learning_rate=learning_rate), loss = 'binary_crossentropy', metrics = ['accuracy'])
+model.compile(optimizer = Adam(learning_rate=learning_rate), loss = 'binary_crossentropy', metrics = ['accuracy', iou])
 model.summary()
 
 model.load_weights('D:\\_data\\dataset\\output\\model_segnet_sample_line_final_weights.h5')
@@ -415,3 +417,4 @@ for i in test_meta['test_img']:
     y_pred_dict[i] = y_pred
 
 joblib.dump(y_pred_dict, 'D:\\_data\\dataset\\output\\y_pred.pkl')
+

@@ -1,4 +1,4 @@
-from sklearn.model_selection import train_test_split, KFold, StratifiedKFold, RepeatedStratifiedKFold
+from sklearn.model_selection import train_test_split, KFold, StratifiedKFold, RepeatedStratifiedKFold, GroupKFold 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import auc
 import tensorflow as tf
@@ -27,21 +27,22 @@ def objectiveRF(trial):
     param = {
         'n_estimators': trial.suggest_int('n_estimators', 10, 1000),  # 범위 조정
         'criterion': trial.suggest_categorical('criterion', ['gini', 'entropy']),
-        'max_depth': trial.suggest_int('max_depth', 10, 100),  # 범위 조정
-        'min_samples_split': trial.suggest_int('min_samples_split', 2, 10),  # 범위 조정
-        'min_samples_leaf': trial.suggest_int('min_samples_leaf', 1, 5),  # 범위 조정
-        'min_weight_fraction_leaf': trial.suggest_float('min_weight_fraction_leaf', 0, 0.05),  # 범위 조정
+        'max_depth': trial.suggest_int('max_depth', 5, 20),  # 범위 조정
+        'min_samples_split': trial.suggest_int('min_samples_split', 2, 5),  # 범위 조정
+        'min_samples_leaf': trial.suggest_int('min_samples_leaf', 1, 3),  # 범위 조정
+        'min_weight_fraction_leaf': trial.suggest_float('min_weight_fraction_leaf', 0.01, 0.04),  # 범위 조정
         'max_features': trial.suggest_categorical('max_features', ['auto', 'sqrt', 'log2', None]),
-        # 'max_leaf_nodes': trial.suggest_int('max_leaf_nodes', 200, 500),  # 범위 조정
-        # 'min_impurity_decrease': trial.suggest_float('min_impurity_decrease', 0, 0.005),  # 범위 조정
-        # 'bootstrap': trial.suggest_categorical('bootstrap', [True, False]),
+        'max_leaf_nodes': trial.suggest_int('max_leaf_nodes', 200, 500),  # 범위 조정
+        'min_impurity_decrease': trial.suggest_float('min_impurity_decrease', 0, 0.005),  # 범위 조정
+        'bootstrap': trial.suggest_categorical('bootstrap', [True, False]),
         'random_state': RANDOM_STATE
     }
+    
 # 몇개 그냥 주석처리해서 하는게 성능이 더 높다.
 
 
     # Stratified k-fold 교차 검증을 위한 설정
-    skf = RepeatedStratifiedKFold(n_splits=5, n_repeats=3, random_state=RANDOM_STATE)
+    skf = KFold(n_splits=5, shuffle=True,  random_state=RANDOM_STATE)
     scores = []
     for train_idx, valid_idx in skf.split(x, y):
         x_train, x_valid = x.iloc[train_idx], x.iloc[valid_idx]
@@ -55,8 +56,13 @@ def objectiveRF(trial):
 
     return np.mean(scores)
 
-study = optuna.create_study(direction='maximize')
-study.optimize(objectiveRF, n_trials=100)
+from optuna.pruners import MedianPruner
+
+# 옵튜나 얼리스탑
+study = optuna.create_study(direction='maximize', pruner=optuna.pruners.MedianPruner(n_startup_trials=5, n_warmup_steps=10, interval_steps=1))
+# study = optuna.create_study(direction="maximize", pruner=MedianPruner())
+# study = optuna.create_study(direction='maximize')
+study.optimize(objectiveRF, n_trials=200)
 
 best_params = study.best_params
 
@@ -67,6 +73,7 @@ model = RandomForestClassifier(**best_params, random_state=RANDOM_STATE)
 selector = SelectFromModel(model, threshold=-np.inf, max_features=8)
 selector.fit(x, y)
 x_selected = selector.transform(x)
+
 
 model.fit(x_selected, y)
 preds = model.predict_proba(x_selected)[:, 1]
@@ -139,4 +146,7 @@ AUC:   0.8527220579747701
 Final AUC score: 0.8704195573563881
 AUC:   0.8704195573563881
 {'n_estimators': 43, 'criterion': 'gini', 'max_depth': 28, 'min_samples_split': 7, 'min_samples_leaf': 5, 'min_weight_fraction_leaf': 0.02025656243386623, 'max_features': 'log2', 'bootstrap': True}
+
+
+
 '''

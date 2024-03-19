@@ -197,14 +197,14 @@ X, test = X.align(test, join='left', axis=1, fill_value=0)
 
 x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# # 스케일링 (좋은지 안좋은지 아직 모름) 안좋은거같음
-# scaler = StandardScaler()
-# x_train_scaled = scaler.fit_transform(x_train)
-# x_test_scaled = scaler.transform(x_test)
+# 스케일링 (좋은지 안좋은지 아직 모름)
+scaler = StandardScaler()
+x_train_scaled = scaler.fit_transform(x_train)
+x_test_scaled = scaler.transform(x_test)
 
 
-# x_train_scaled = pd.DataFrame(x_train_scaled, columns=x_train.columns)
-# x_test_scaled = pd.DataFrame(x_test_scaled, columns=x_test.columns)
+x_train_scaled = pd.DataFrame(x_train_scaled, columns=x_train.columns)
+x_test_scaled = pd.DataFrame(x_test_scaled, columns=x_test.columns)
 
 
 
@@ -222,9 +222,13 @@ class EnsembleRegressor:
         self.xgb_weight = xgb_weight
         self.catboost_weight = catboost_weight
 
-    def fit(self, X, y):
-        self.xgb_model.fit(X, y)
-        self.catboost_model.fit(X, y)
+    def fit(self, X, y, X_val, y_val):
+        # XGBoost에 대한 조기 종료 설정
+        self.xgb_model.fit(X, y, eval_set=[(X_val, y_val)], early_stopping_rounds=10, verbose=False)
+        
+        # CatBoost에 대한 조기 종료 설정
+        self.catboost_model.fit(X, y, eval_set=[(X_val, y_val)], early_stopping_rounds=10, verbose=False)
+
 
     def predict(self, X):
         xgb_pred = self.xgb_model.predict(X)
@@ -265,8 +269,11 @@ def objective(trial):
     catboost_weight = 1 - xgb_weight  # 두 모델의 가중치 합이 1이 되도록 설정
     model = EnsembleRegressor(xgb_params=xgb_params, catboost_params=catboost_params, xgb_weight=xgb_weight, catboost_weight=catboost_weight)
 
-    model.fit(x_train, y_train)
-    preds = model.predict(x_test)
+    
+    X_train, X_val, y_train1, y_val = train_test_split(x_train_scaled, y_train1, test_size=0.2, random_state=42)
+    model.fit(X_train, y_train1, X_val, y_val)
+    # 스케일링된 테스트 데이터로 예측
+    preds = model.predict(x_test_scaled)
     rmse = np.sqrt(mean_squared_error(y_test, preds))
     return rmse
 
@@ -281,7 +288,7 @@ def objective(trial):
     # return rmse
 
 study = optuna.create_study(direction='minimize')
-study.optimize(objective, n_trials=100 ,timeout=1200)  # 100회 시도하거나, 총 600초가 경과하면 종료
+study.optimize(objective, n_trials=1 ,timeout=1200)  # 100회 시도하거나, 총 600초가 경과하면 종료
 
 print('Number of finished trials:', len(study.trials))
 print('Best trial:', study.best_trial.params)
@@ -292,17 +299,19 @@ best_catboost_params = {k.replace('catboost_', ''): v for k, v in study.best_tri
 best_xgb_weight = study.best_trial.params.get('xgb_weight')
 best_catboost_weight = 1 - best_xgb_weight
 
+X_train, X_val, y_train, y_val = train_test_split(x_train_scaled, y_train, test_size=0.2, random_state=42)
 best_model = EnsembleRegressor(xgb_params=best_xgb_params, catboost_params=best_catboost_params, xgb_weight=best_xgb_weight, catboost_weight=best_catboost_weight)
-best_model.fit(x_train, y_train)  # 전체 데이터셋을 사용하여 최종 모델 훈련
+best_model.fit(x_train_scaled, y_train)  # 전체 데이터셋을 사용하여 최종 모델 훈련
 
 # 최적화된 모델로 테스트 데이터에 대한 예측 수행
-ensemble_pred = best_model.predict(x_test)
+ensemble_pred = best_model.predict(x_test_scaled)
 
 ensemble_rmse = np.sqrt(mean_squared_error(y_test, ensemble_pred))
 print(f'Optimized Ensemble RMSE: {ensemble_rmse}')
 
 # 테스트 데이터에 대한 예측 수행
-test_preds = best_model.predict(test)
+test_scaled = scaler.transform(test)
+test_preds = best_model.predict(test_scaled)
 submission['Income'] = test_preds
 
 # 제출 파일 생성

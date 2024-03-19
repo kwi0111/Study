@@ -133,116 +133,85 @@ def conv2d_block(input_tensor, n_filters, kernel_size = 3, batchnorm = True):
 
 #Attention Gate
 def attention_gate(F_g, F_l, inter_channel):
-    W_g = Conv2D(inter_channel, kernel_size=1, padding='same')(F_g)
+    """
+    An attention gate.
+
+    Arguments:
+    - F_g: Gating signal typically from a coarser scale.
+    - F_l: The feature map from the skip connection.
+    - inter_channel: The number of channels/filters in the intermediate layer.
+    """
+    # Intermediate transformation on the gating signal
+    W_g = Conv2D(inter_channel, kernel_size=1, strides=1, padding='same', kernel_initializer='he_normal')(F_g)
     W_g = BatchNormalization()(W_g)
-    W_g = Activation('relu')(W_g)
 
-    W_l = Conv2D(inter_channel, kernel_size=1, padding='same')(F_l)
-    W_l = BatchNormalization()(W_l)
-    W_l = Activation('relu')(W_l)
+    # Intermediate transformation on the skip connection feature map
+    W_x = Conv2D(inter_channel, kernel_size=1, strides=1, padding='same', kernel_initializer='he_normal')(F_l)
+    W_x = BatchNormalization()(W_x)
 
-    # F_l의 채널 수를 동적으로 F_g와 일치시키기
-    F_l_adjusted = Conv2D(F_g.shape[-1], (1, 1), padding='same')(F_l)
-    F_l_adjusted = BatchNormalization()(F_l_adjusted)
-    F_l_adjusted = Activation('relu')(F_l_adjusted)
-
-    psi = Add()([W_g, F_l_adjusted])
-
-    
-    print("F_g shape:", F_g.shape)
-    print("F_l shape before resizing:", F_l.shape)
-    F_l_resized = UpSampling2D(size=(2, 2))(F_l) if F_l.shape[1:3] != F_g.shape[1:3] else F_l
-    print("F_l shape after resizing:", F_l_resized.shape)
+    # Combine the transformations
+    psi = Activation('relu')(add([W_g, W_x]))
+    psi = Conv2D(1, kernel_size=1, strides=1, padding='same', kernel_initializer='he_normal')(psi)
+    psi = BatchNormalization()(psi)
+    psi = Activation('sigmoid')(psi)
 
     # Apply the attention coefficients to the feature map from the skip connection
     return multiply([F_l, psi])
-    
 
-from keras.applications import ResNet50
 from keras.applications import VGG16
-
-def get_pretrained_attention_unet(input_height=256, input_width=256, nClasses=1, n_filters=16, n_channels=3):
-    inputs = Input(shape=(IMAGE_SIZE[0], IMAGE_SIZE[1], n_channels))
-
-    # 예시로 ResNet50 사용
-    base_model = ResNet50(weights='imagenet', include_top=False, input_tensor=inputs)
-
-    # Skip connections
-    s1 = base_model.get_layer("conv2_block3_out").output
-    s2 = base_model.get_layer("conv3_block4_out").output
-    s3 = base_model.get_layer("conv4_block6_out").output
-    s4 = base_model.get_layer("conv5_block3_out").output
-    bridge = base_model.output
-
+def get_pretrained_attention_unet(input_height=256, input_width=256, nClasses=1, n_filters=16, dropout=0.05, batchnorm=True, n_channels=3):
+    base_model = VGG16(weights='imagenet', include_top=False, input_shape=(input_height, input_width, n_channels))
+    
+    # Define the inputs
+    inputs = base_model.input
+    
+    # Use specific layers from the VGG16 model for skip connections
+    s1 = base_model.get_layer("block1_conv2").output
+    s2 = base_model.get_layer("block2_conv2").output
+    s3 = base_model.get_layer("block3_conv3").output
+    s4 = base_model.get_layer("block4_conv3").output
+    bridge = base_model.get_layer("block5_conv3").output
+    
     # Decoder with attention gates
     d1 = UpSampling2D((2, 2))(bridge)
     d1 = concatenate([d1, attention_gate(d1, s4, n_filters*8)])
-    d1 = conv2d_block(d1, n_filters*8)
-
+    d1 = conv2d_block(d1, n_filters*8, kernel_size=3, batchnorm=batchnorm)
+    
     d2 = UpSampling2D((2, 2))(d1)
     d2 = concatenate([d2, attention_gate(d2, s3, n_filters*4)])
-    d2 = conv2d_block(d2, n_filters*4)
-
+    d2 = conv2d_block(d2, n_filters*4, kernel_size=3, batchnorm=batchnorm)
+    
     d3 = UpSampling2D((2, 2))(d2)
     d3 = concatenate([d3, attention_gate(d3, s2, n_filters*2)])
-    d3 = conv2d_block(d3, n_filters*2)
-
+    d3 = conv2d_block(d3, n_filters*2, kernel_size=3, batchnorm=batchnorm)
+    
     d4 = UpSampling2D((2, 2))(d3)
     d4 = concatenate([d4, attention_gate(d4, s1, n_filters)])
-    d4 = conv2d_block(d4, n_filters)
-
+    d4 = conv2d_block(d4, n_filters, kernel_size=3, batchnorm=batchnorm)
+    
     outputs = Conv2D(nClasses, (1, 1), activation='sigmoid')(d4)
     model = Model(inputs=[inputs], outputs=[outputs])
-
     return model
 
-def get_model(model_name, nClasses=1, input_height=128, input_width=128, n_filters=16, dropout=0.1, batchnorm=True, n_channels=3):
-    # 모델 이름에 따라 해당 모델을 반환
+def get_model(model_name, nClasses=1, input_height=128, input_width=128, n_filters = 16, dropout = 0.05, batchnorm = True, n_channels=3):
+    
     if model_name == 'pretrained_attention_unet':
-        return get_pretrained_attention_unet(
-            nClasses=nClasses,
-            input_height=input_height,
-            input_width=input_width,
-            n_filters=n_filters,
-            # dropout=dropout,
-            # batchnorm=batchnorm,
-            n_channels=n_channels
+        model = get_pretrained_attention_unet
+        
+        
+    return model(
+            nClasses      = nClasses,
+            input_height  = input_height,
+            input_width   = input_width,
+            n_filters     = n_filters,
+            dropout       = dropout,
+            batchnorm     = batchnorm,
+            n_channels    = n_channels
         )
-    else:
-        raise ValueError("Model name not recognized.")
-
-
-import tensorflow as tf
-
-# 두 텐서 정의 (예시)
-tensor_a = tf.random.normal([16, 16, 128])
-tensor_b = tf.random.normal([8, 8, 128])
-
-# 텐서의 차원 출력
-print("Tensor A shape:", tensor_a.shape)
-print("Tensor B shape:", tensor_b.shape)
-
-# 차원 비교
-import tensorflow as tf
-
-# 배치 차원 추가 예시
-tensor_b_expanded = tf.expand_dims(tensor_b, axis=0)
-
-# Tensor B를 업샘플링하기 위한 UpSampling2D 레이어 정의
-up_sampling_layer = tf.keras.layers.UpSampling2D(size=(2, 2))
-
-# Tensor B에 업샘플링 적용
-tensor_b_upsampled = up_sampling_layer(tensor_b_expanded)
-
-# 업샘플링된 Tensor B의 차원 확인
-print("Upsampled Tensor B shape:", tensor_b_upsampled.shape)
-
-# 필요한 경우, 배치 차원을 다시 제거할 수 있습니다.
-tensor_b_upsampled_squeezed = tf.squeeze(tensor_b_upsampled, axis=0)
-print("Upsampled Tensor B shape after removing batch dimension:", tensor_b_upsampled_squeezed.shape)
 
 
 
+    
 
 # 두 샘플 간의 유사성 metric
 def dice_coef(y_true, y_pred, smooth=1):
@@ -274,8 +243,8 @@ save_name = 'sample_line'
 
 N_FILTERS = 16 # 필터수 지정
 N_CHANNELS = 3 # channel 지정
-EPOCHS = 15 # 훈련 epoch 지정
-BATCH_SIZE = 18 # batch size 지정
+EPOCHS = 1 # 훈련 epoch 지정
+BATCH_SIZE = 32 # batch size 지정
 IMAGE_SIZE = (256, 256) # 이미지 크기 지정
 MODEL_NAME = 'pretrained_attention_unet' # 모델 이름
 RANDOM_STATE = 42 # seed 고정
@@ -287,10 +256,10 @@ MASKS_PATH = 'D:\\_data\\dataset\\train_mask\\'
 
 # 가중치 저장 위치
 OUTPUT_DIR = 'D:\\_data\\dataset\\output\\'
-WORKERS = 16
+WORKERS = 22
 
 # 조기종료
-EARLY_STOP_PATIENCE = 10
+EARLY_STOP_PATIENCE = 20
 
 # 중간 가중치 저장 이름
 CHECKPOINT_PERIOD = 5
@@ -354,7 +323,7 @@ def miou(y_true, y_pred, smooth=1e-6):
     return miou
 
 # model 불러오기
-learning_rate = 0.01
+learning_rate = 0.001
 # model = get_model(MODEL_NAME, input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_filters=N_FILTERS,)
 model = get_model(MODEL_NAME, input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_filters=N_FILTERS, n_channels=N_CHANNELS)
 model.compile(optimizer = Adam(learning_rate=learning_rate), loss = 'binary_crossentropy', metrics = ['accuracy', miou])
@@ -385,12 +354,12 @@ model_weights_output = os.path.join(OUTPUT_DIR, FINAL_WEIGHTS_OUTPUT)
 model.save_weights(model_weights_output)
 print("저장된 가중치 명: {}".format(model_weights_output))
 
-learning_rate = 0.01
-model = get_model(MODEL_NAME, input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_filters=N_FILTERS, )
-model.compile(optimizer = Adam(learning_rate=learning_rate), loss = 'binary_crossentropy', metrics = ['accuracy'])
-model.summary()
+# learning_rate = 0.001
+# model = get_model(MODEL_NAME, input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_filters=N_FILTERS, )
+# model.compile(optimizer = Adam(learning_rate=learning_rate), loss = 'binary_crossentropy', metrics = ['accuracy'])
+# model.summary()
 
-model.load_weights('D:\\_data\\dataset\\output\\model_segnet_sample_line_final_weights.h5')
+# model.load_weights('D:\\_data\\dataset\\output\\model_pretrained_attention_unet_sample_line_final_weights.h5')
 
 y_pred_dict = {}
 
@@ -403,9 +372,3 @@ for i in test_meta['test_img']:
     y_pred_dict[i] = y_pred
 
 joblib.dump(y_pred_dict, 'D:\\_data\\dataset\\output\\y_pred.pkl')
-
-
-
-'''
-Optimized Ensemble RMSE: 542.8822300826407
-'''
