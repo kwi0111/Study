@@ -202,7 +202,6 @@ x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 # x_train_scaled = scaler.fit_transform(x_train)
 # x_test_scaled = scaler.transform(x_test)
 
-
 # x_train_scaled = pd.DataFrame(x_train_scaled, columns=x_train.columns)
 # x_test_scaled = pd.DataFrame(x_test_scaled, columns=x_test.columns)
 
@@ -235,30 +234,30 @@ class EnsembleRegressor:
 
 def objective(trial):
     xgb_params = {
-        'n_estimators': trial.suggest_int('xgb_n_estimators', 100, 1500),  # 범위 확장
-        'max_depth': trial.suggest_int('xgb_max_depth', 3, 15),  # 범위 확장
-        'learning_rate': trial.suggest_loguniform('xgb_learning_rate', 0.005, 0.3),  # log scale로 변경
-        'min_child_weight': trial.suggest_int('xgb_min_child_weight', 0, 10),  # 최소값 조정
-        'gamma': trial.suggest_float('xgb_gamma', 0, 1.5),  # 범위 확장
-        'subsample': trial.suggest_float('xgb_subsample', 0.5, 1.0),  # 범위 확장
-        'colsample_bytree': trial.suggest_float('xgb_colsample_bytree', 0.5, 1.0),  # 범위 확장
-        'reg_alpha': trial.suggest_loguniform('xgb_reg_alpha', 1e-5, 1),  # log scale로 변경 및 범위 확장
-        'reg_lambda': trial.suggest_loguniform('xgb_reg_lambda', 0.1, 10),  # log scale로 변경 및 범위 확장
-        'max_delta_step': trial.suggest_int('xgb_max_delta_step', 0, 10),  # 범위 확장
-        'eval_metric': trial.suggest_categorical('xgb_eval_metric', ['rmse', 'mae', 'logloss']),  # 옵션 추가
+        'n_estimators': trial.suggest_int('xgb_n_estimators', 100, 1000),  # 수정됨
+        'max_depth': trial.suggest_int('xgb_max_depth', 3, 10),  # 수정됨
+        'learning_rate': trial.suggest_loguniform('xgb_learning_rate', 0.001, 0.1),  # 수정됨
+        'min_child_weight': trial.suggest_int('xgb_min_child_weight', 1, 20),  # 수정됨
+        'gamma': trial.suggest_float('xgb_gamma', 0.0, 0.5),
+        'subsample': trial.suggest_float('xgb_subsample', 0.5, 1.0),  # 수정됨
+        'colsample_bytree': trial.suggest_float('xgb_colsample_bytree', 0.5, 1.0),  # 수정됨
+        'reg_alpha': trial.suggest_loguniform('xgb_reg_alpha', 1e-5, 10),  # 수정됨
+        'reg_lambda': trial.suggest_loguniform('xgb_reg_lambda', 1e-2, 100),  # 수정됨
+        'booster': 'gbtree',
+        'tree_method': 'hist',
+        'eval_metric': 'rmse',
     }
     
     catboost_params = {
-        'iterations': trial.suggest_int('catboost_iterations', 100, 1500),  # 범위 확장
-        'depth': trial.suggest_int('catboost_depth', 4, 12),  # 범위 확장
-        'learning_rate': trial.suggest_loguniform('catboost_learning_rate', 0.005, 0.3),  # log scale로 변경
-        'l2_leaf_reg': trial.suggest_loguniform('catboost_l2_leaf_reg', 1, 30),  # log scale로 변경 및 범위 확장
-        'border_count': trial.suggest_int('catboost_border_count', 32, 255),  # 범위 확장
+        'iterations': trial.suggest_int('catboost_iterations', 100, 1000),  # 수정됨
+        'depth': trial.suggest_int('catboost_depth', 4, 10),  # 수정됨
+        'learning_rate': trial.suggest_loguniform('catboost_learning_rate', 0.001, 0.1),  # 수정됨
+        'l2_leaf_reg': trial.suggest_loguniform('catboost_l2_leaf_reg', 1, 20),  # 수정됨
+        'border_count': trial.suggest_int('catboost_border_count', 50, 200),
         'bagging_temperature': trial.suggest_float('catboost_bagging_temperature', 0.0, 1.0),
-        'random_strength': trial.suggest_loguniform('catboost_random_strength', 1e-10, 10),  # log scale로 변경
-        'one_hot_max_size': trial.suggest_int('catboost_one_hot_max_size', 2, 25),  # 범위 확장
-        'task_type': 'GPU',  # GPU 사용 설정
-        'loss_function': trial.suggest_categorical('catboost_loss_function', ['RMSE', 'MAE', 'Quantile']),
+        'random_strength': trial.suggest_loguniform('catboost_random_strength', 1e-10, 1e-2),  # 수정됨
+        'task_type': 'GPU',
+        'loss_function': 'RMSE',
     }
     
     xgb_weight = trial.suggest_float('xgb_weight', 0, 1)
@@ -281,7 +280,7 @@ def objective(trial):
     # return rmse
 
 study = optuna.create_study(direction='minimize')
-study.optimize(objective, n_trials=100 ,timeout=1200)  # 100회 시도하거나, 총 600초가 경과하면 종료
+study.optimize(objective, n_trials=30) #,timeout=600)  # 100회 시도하거나, 총 600초가 경과하면 종료
 
 print('Number of finished trials:', len(study.trials))
 print('Best trial:', study.best_trial.params)

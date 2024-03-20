@@ -25,24 +25,39 @@ y = train_csv['login']
 
 def objectiveRF(trial):
     param = {
-        'n_estimators': trial.suggest_int('n_estimators', 10, 1000),  # 범위 조정
-        'criterion': trial.suggest_categorical('criterion', ['gini', 'entropy']),
-        'max_depth': trial.suggest_int('max_depth', 5, 20),  # 범위 조정
-        'min_samples_split': trial.suggest_int('min_samples_split', 2, 5),  # 범위 조정
-        'min_samples_leaf': trial.suggest_int('min_samples_leaf', 1, 3),  # 범위 조정
-        'min_weight_fraction_leaf': trial.suggest_float('min_weight_fraction_leaf', 0.01, 0.04),  # 범위 조정
-        'max_features': trial.suggest_categorical('max_features', ['auto', 'sqrt', 'log2', None]),
-        'max_leaf_nodes': trial.suggest_int('max_leaf_nodes', 200, 500),  # 범위 조정
-        'min_impurity_decrease': trial.suggest_float('min_impurity_decrease', 0, 0.005),  # 범위 조정
-        'bootstrap': trial.suggest_categorical('bootstrap', [True, False]),
+        'n_estimators': trial.suggest_int('n_estimators', 100, 1000),  # 조정: 트리의 수를 200에서 1000 사이로 확장
+        'criterion': trial.suggest_categorical('criterion', ['gini']),
+        'max_depth': trial.suggest_int('max_depth', 100, 500),  # 조정: 최대 깊이를 더 넓은 범위로 조정하여 더 깊은 트리 허용
+        'min_samples_split': trial.suggest_int('min_samples_split', 5, 15),  # 조정: 분할에 필요한 최소 샘플 수 범위 조정
+        'min_samples_leaf': trial.suggest_int('min_samples_leaf', 5, 10),  # 조정: 리프에 필요한 최소 샘플 수 조정
+        'min_weight_fraction_leaf': trial.suggest_float('min_weight_fraction_leaf', 0.0003708462079350574),  # 복원: 리프의 최소 가중치 비율 조정
+        'max_features': trial.suggest_categorical('max_features', ['auto']),  # 조정: 최대 특성 수 결정
+        'max_leaf_nodes': trial.suggest_int('max_leaf_nodes',398),  # 복원 및 조정: 최대 리프 노드 수를 100에서 1000 사이로 설정
+        'min_impurity_decrease': trial.suggest_float('min_impurity_decrease',5.396924281913153e-06),  # 조정: 불순도 감소량의 최소값 조정
+        'bootstrap': trial.suggest_categorical('bootstrap', [True]),  # 조정: 부트스트랩 샘플링을 사용할지 여부
         'random_state': RANDOM_STATE
     }
-    
-# 몇개 그냥 주석처리해서 하는게 성능이 더 높다.
+# def objectiveRF(trial):
+#     param = {
+#         'n_estimators': 110,  # 고정값으로 설정
+#         'criterion': 'gini',  # 고정값으로 설정
+#         'max_depth': 409,  # 고정값으로 설정
+#         'min_samples_split': 11,  # 고정값으로 설정
+#         'min_samples_leaf': 9,  # 고정값으로 설정
+#         'min_weight_fraction_leaf': 0.0003708462079350574,  # 고정값으로 설정
+#         'max_features': 'auto',  # 고정값으로 설정
+#         'max_leaf_nodes': 398,  # 고정값으로 설정
+#         'min_impurity_decrease': 5.396924281913153e-06,  # 고정값으로 설정
+#         'bootstrap': True,  # 고정값으로 설정
+#         'random_state': RANDOM_STATE
+#     }
 
 
-    # Stratified k-fold 교차 검증을 위한 설정
-    skf = KFold(n_splits=5, shuffle=True,  random_state=RANDOM_STATE)
+# 최고점 // 막상 이걸로 하니까 별로임
+# 110,gini,409,11,9,0.0003708462079350574,auto,398,5.396924281913153e-06,True // AUC:   0.9546961683883202
+
+    # 여기는 이전과 동일
+    skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
     scores = []
     for train_idx, valid_idx in skf.split(x, y):
         x_train, x_valid = x.iloc[train_idx], x.iloc[valid_idx]
@@ -56,13 +71,8 @@ def objectiveRF(trial):
 
     return np.mean(scores)
 
-from optuna.pruners import MedianPruner
-
-# 옵튜나 얼리스탑
-study = optuna.create_study(direction='maximize', pruner=optuna.pruners.MedianPruner(n_startup_trials=5, n_warmup_steps=10, interval_steps=1))
-# study = optuna.create_study(direction="maximize", pruner=MedianPruner())
-# study = optuna.create_study(direction='maximize')
-study.optimize(objectiveRF, n_trials=200)
+study = optuna.create_study(direction='maximize', pruner=optuna.pruners.MedianPruner(n_startup_trials=5, n_warmup_steps=20, interval_steps=1))
+study.optimize(objectiveRF, n_trials=300)
 
 best_params = study.best_params
 

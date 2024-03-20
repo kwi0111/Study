@@ -1,15 +1,20 @@
-import pandas as pd
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import train_test_split, KFold, StratifiedKFold, RepeatedStratifiedKFold, GroupKFold 
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import StratifiedKFold, train_test_split
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
-import time
-import datetime
-from bayes_opt import BayesianOptimization
-from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import auc
+import tensorflow as tf
+import pandas as pd
+import numpy as np
+import optuna
+import random
 from sklearn.metrics import roc_auc_score
+from sklearn.feature_selection import SelectFromModel
 import warnings
 warnings.filterwarnings("ignore")
+
+RANDOM_STATE = 42  
+tf.random.set_seed(RANDOM_STATE)
+random.seed(RANDOM_STATE)
+np.random.seed(RANDOM_STATE)
 
 path = 'C:\\_data\\dacon\\hyper\\'
 train_csv = pd.read_csv(path + 'train.csv')
