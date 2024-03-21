@@ -386,7 +386,7 @@ def miou(y_true, y_pred, smooth=1e-6):
 learning_rate = 0.01
 model = get_model(MODEL_NAME, input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_filters=N_FILTERS,)
 model.compile(optimizer = Adam(learning_rate=learning_rate), loss = 'binary_crossentropy', metrics = ['accuracy', miou])
-# model.summary()
+model.summary()
 
 # checkpoint 및 조기종료 설정
 es = EarlyStopping(monitor='val_miou', mode='max', verbose=1, patience=EARLY_STOP_PATIENCE, restore_best_weights=True)

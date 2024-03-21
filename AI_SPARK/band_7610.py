@@ -23,7 +23,7 @@ import numpy as np
 import sys
 from sklearn.utils import shuffle as shuffle_lists
 from keras.models import Model
-from keras.layers import Input, Conv2D, BatchNormalization, Activation, UpSampling2D, Concatenate, DepthwiseConv2D, LayerNormalization
+from keras.layers import Input, Conv2D, BatchNormalization, Activation, UpSampling2D, Concatenate, DepthwiseConv2D
 from keras.applications import MobileNetV2
 from keras.models import *
 from keras.layers import *
@@ -31,13 +31,12 @@ import numpy as np
 from keras import backend as K
 from sklearn.model_selection import train_test_split
 import joblib
-from keras_unet_collection import models
 import segmentation_models as sm
 import tensorflow_addons as tfa
 
-np.random.seed(717)       # 0
-random.seed(717)         # 42 
-tf.random.set_seed(717)   # 7
+np.random.seed(12922085)       # 0
+random.seed(22906815)         # 42 
+tf.random.set_seed(3727687611)   # 7
 
 MAX_PIXEL_VALUE = 65535 # 이미지 정규화를 위한 픽셀 최대값
 THESHOLDS = 0.25
@@ -71,7 +70,7 @@ def get_img_arr(path):
     return img
 
 def get_img_762bands(path):
-    img = rasterio.open(path).read((7,6,2)).transpose((1, 2, 0))    
+    img = rasterio.open(path).read((7,6,10)).transpose((1, 2, 0))    
     img = np.float32(img)/MAX_PIXEL_VALUE
     
     return img
@@ -132,6 +131,64 @@ def generator_from_lists(images_path, masks_path, batch_size=32, shuffle = True,
 
 
 ###################################################################
+def conv_block(input_tensor, num_filters):
+    encoder = Conv2D(num_filters, (3, 3), padding='same')(input_tensor)
+    encoder = BatchNormalization()(encoder)
+    encoder = Activation('relu')(encoder)
+    encoder = Conv2D(num_filters, (3, 3), padding='same')(encoder)
+    encoder = BatchNormalization()(encoder)
+    encoder = Activation('relu')(encoder)
+    return encoder
+
+def attention_block(input_tensor, num_filters):
+    att = Conv2D(num_filters, (1, 1), padding='same')(input_tensor)
+    att = BatchNormalization()(att)
+    att = Activation('relu')(att)
+    return att
+
+def up_block(input_tensor, concat_tensor, num_filters):
+    up = UpSampling2D((2, 2))(input_tensor)
+    up = Concatenate()([up, concat_tensor])
+    up = conv_block(up, num_filters)
+    return up
+
+def get_attention_unet(input_height=256, input_width=256, n_channels=3, n_classes=1, num_filters=16):
+    inputs = Input((input_height, input_width, n_channels))
+
+    # Encoder
+    enc1 = conv_block(inputs, num_filters)
+    pool1 = MaxPooling2D(pool_size=(2, 2))(enc1)
+
+    enc2 = conv_block(pool1, num_filters*2)
+    pool2 = MaxPooling2D(pool_size=(2, 2))(enc2)
+
+    enc3 = conv_block(pool2, num_filters*4)
+    pool3 = MaxPooling2D(pool_size=(2, 2))(enc3)
+
+    enc4 = conv_block(pool3, num_filters*8)
+    pool4 = MaxPooling2D(pool_size=(2, 2))(enc4)
+
+    # Center
+    center = conv_block(pool4, num_filters*16)
+
+    # Decoder
+    att4 = attention_block(center, num_filters*8)
+    dec4 = up_block(att4, enc4, num_filters*8)
+
+    att3 = attention_block(dec4, num_filters*4)
+    dec3 = up_block(att3, enc3, num_filters*4)
+
+    att2 = attention_block(dec3, num_filters*2)
+    dec2 = up_block(att2, enc2, num_filters*2)
+
+    att1 = attention_block(dec2, num_filters)
+    dec1 = up_block(att1, enc1, num_filters)
+
+    outputs = Conv2D(n_classes, (1, 1), activation='sigmoid')(dec1)
+
+    model = Model(inputs=[inputs], outputs=[outputs])
+    return model
+
 
 ###################################################################
 
@@ -159,15 +216,15 @@ train_meta = pd.read_csv('D:\\_data\\dataset\\train_meta.csv')
 test_meta = pd.read_csv('D:\\_data\\dataset\\test_meta.csv')
 
 #  저장 이름
-save_name = 'swin_unet'
+save_name = 'band10'
 
 N_FILTERS = 16 # 필터수 지정
 N_CHANNELS = 3 # channel 지정
-EPOCHS = 100 # 훈련 epoch 지정
-BATCH_SIZE = 8  # batch size 지정
+EPOCHS = 50 # 훈련 epoch 지정
+BATCH_SIZE = 32  # batch size 지정
 IMAGE_SIZE = (256, 256) # 이미지 크기 지정
-MODEL_NAME = 'swin_unet' # 모델 이름
-RANDOM_STATE = 42 # seed 고정
+MODEL_NAME = 'band10' # 모델 이름
+RANDOM_STATE = 1013 # seed 고정
 INITIAL_EPOCH = 0 # 초기 epoch
 
 # 데이터 위치
@@ -182,11 +239,11 @@ WORKERS = 16    # 원래 4 // (코어 / 2 ~ 코어)
 EARLY_STOP_PATIENCE = 20
 
 # 중간 가중치 저장 이름
-CHECKPOINT_PERIOD = 5
-CHECKPOINT_MODEL_NAME = 'checkpoint-{}-{}-epoch_{{epoch:02d}}_swin.hdf5'.format(MODEL_NAME, save_name)
+CHECKPOINT_PERIOD = 1
+CHECKPOINT_MODEL_NAME = 'checkpoint-{}-{}-epoch_{{epoch:02d}}_band10.hdf5'.format(MODEL_NAME, save_name)
  
 # 최종 가중치 저장 이름
-FINAL_WEIGHTS_OUTPUT = 'model_{}_{}_swin.h5'.format(MODEL_NAME, save_name)
+FINAL_WEIGHTS_OUTPUT = 'model_{}_{}_band10.h5'.format(MODEL_NAME, save_name)
 
 # 사용할 GPU 이름
 CUDA_DEVICE = 0
@@ -228,31 +285,22 @@ train_generator = generator_from_lists(images_train, masks_train, batch_size=BAT
 validation_generator = generator_from_lists(images_validation, masks_validation, batch_size=BATCH_SIZE, random_state=RANDOM_STATE, image_mode="762")
 
 
+model = get_attention_unet()
 
-# model = models.swin_unet_2d((IMAGE_SIZE[0], IMAGE_SIZE[1], N_CHANNELS), filter_num_begin=N_FILTERS, n_labels=1, 
-#                             depth=4, stack_num_down=2, stack_num_up=2, 
-#                             patch_size=(2, 2), num_heads=[4, 8, 8, 8], window_size=[4, 2, 2, 2], num_mlp=512, 
-#                             output_activation='Sigmoid', shift_window=True, name='swin_unet')
-
-model = models.unet_3plus_2d((256, 256, 3), n_labels=1, filter_num_down=[64, 128, 256], 
-                             filter_num_skip='auto', filter_num_aggregate='auto', 
-                             stack_num_down=2, stack_num_up=1, activation='ReLU', output_activation='Sigmoid',
-                             batch_norm=True, pool='max', unpool=False, deep_supervision=True, name='unet3plus')
-
-optimizer = tfa.optimizers.AdamW(learning_rate=1e-3, weight_decay=1e-4)
-
-model.compile(optimizer=optimizer,
-              loss=sm.losses.bce_jaccard_loss, 
+optimizer = tfa.optimizers.AdamW(learning_rate=0.001, weight_decay=1e-4)  # 1e-4 = 0.0001
+model.compile(
+              optimizer=optimizer,
             #   loss = sm.losses.binary_focal_dice_loss,
+              loss=sm.losses.bce_jaccard_loss, 
               metrics=['accuracy', sm.metrics.iou_score, miou])
-model.summary()
+# model.summary()
 
 # checkpoint 및 조기종료 설정
-es = EarlyStopping(monitor='val_iou_score', mode='max', verbose=0, patience = 10 , restore_best_weights=True)
-checkpoint = ModelCheckpoint(os.path.join(OUTPUT_DIR, CHECKPOINT_MODEL_NAME), monitor='val_iou_score', verbose=0,
+es = EarlyStopping(monitor='val_iou_score', mode='max', verbose=1, patience = 10 , restore_best_weights=True)
+checkpoint = ModelCheckpoint(os.path.join(OUTPUT_DIR, CHECKPOINT_MODEL_NAME), monitor='val_iou_score', verbose=1,
 save_best_only=True, mode='max', period=CHECKPOINT_PERIOD)
 # Reduce
-rlr = ReduceLROnPlateau(monitor='val_iou_score',factor=0.4, patience = 5 , verbose=0, mode='max')
+rlr = ReduceLROnPlateau(monitor='val_iou_score',factor=0.5, patience = 5 , verbose=1, mode='max')
 
 print('---model 훈련 시작---')
 history = model.fit(
@@ -272,13 +320,13 @@ model_weights_output = os.path.join(OUTPUT_DIR, FINAL_WEIGHTS_OUTPUT)
 model.save_weights(model_weights_output)
 print("저장된 가중치 명: {}".format(model_weights_output))
 
-# model.load_weights('c:/Study/aifactory/train_output/model_attention_attention_unet2_attention2.h5')
+# model.load_weights('D:\\_data\\dataset\\train_output\\checkpoint-band10-band10-epoch_11_band10.hdf5')
 
 y_pred_dict = {}
 
 for i in test_meta['test_img']:
     img = get_img_762bands(f'D:\\_data\\dataset\\test_img\\{i}')
-    y_pred = model.predict(np.array([img]), batch_size=1, verbose=0)
+    y_pred = model.predict(np.array([img]), batch_size=1, verbose=1)
 
     y_pred = np.where(y_pred[0, :, :, 0] > 0.25, 1, 0) # 임계값 처리
     y_pred = y_pred.astype(np.uint8)

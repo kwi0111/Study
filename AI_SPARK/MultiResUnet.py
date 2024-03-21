@@ -28,6 +28,7 @@ from keras import backend as K
 from sklearn.model_selection import train_test_split
 import joblib
 import numpy as np
+from keras.callbacks import ReduceLROnPlateau
 
 MAX_PIXEL_VALUE = 65535 # 이미지 정규화를 위한 픽셀 최대값
 
@@ -306,16 +307,13 @@ def MultiResUnet(height, width, n_channels):
 
     return model
 
-
-
-
-def get_model(model_name, nClasses=1, input_height=128, input_width=128, n_filters=16, dropout=0.1, batchnorm=True, n_channels=3):
-    if model_name == 'MultiResUNet':
-        # 수정된 부분: MultiResUnet 함수 호출 시 필요한 인자들을 전달
-        return MultiResUnet(height=input_height, width=input_width, n_channels=n_channels)
-    else:
-        print("Model name not recognized. Please check the model name and try again.")
-        return None
+# def get_model(model_name, nClasses=1, input_height=256, input_width=256, n_filters=16, dropout=0.1, batchnorm=True, n_channels=3):
+#     if model_name == 'MultiResUNet':
+#         # 수정된 부분: MultiResUnet 함수 호출 시 필요한 인자들을 전달
+#         return MultiResUnet(height=input_height, width=input_width, n_channels=n_channels)
+#     else:
+#         print("Model name not recognized. Please check the model name and try again.")
+#         return None
 
 
 # 두 샘플 간의 유사성 metric
@@ -348,8 +346,8 @@ save_name = 'sample_line'
 
 N_FILTERS = 16 # 필터수 지정
 N_CHANNELS = 3 # channel 지정
-EPOCHS = 3 # 훈련 epoch 지정
-BATCH_SIZE = 8 # batch size 지정
+EPOCHS = 150 # 훈련 epoch 지정
+BATCH_SIZE = 6 # batch size 지정
 IMAGE_SIZE = (256, 256) # 이미지 크기 지정
 MODEL_NAME = 'MultiResUNet' # 모델 이름
 RANDOM_STATE = 42 # seed 고정
@@ -429,7 +427,7 @@ def miou(y_true, y_pred, smooth=1e-6):
 
 # model 불러오기
 learning_rate = 0.0001
-model = get_model(MODEL_NAME, input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_filters=N_FILTERS,)
+model = MultiResUnet(height=IMAGE_SIZE[0], width=IMAGE_SIZE[1], n_channels=N_CHANNELS,)
 model.compile(optimizer = Adam(learning_rate=learning_rate), loss = 'binary_crossentropy', metrics = ['accuracy', miou])
 # model.summary()
 
@@ -438,36 +436,37 @@ es = EarlyStopping(monitor='val_miou', mode='max', verbose=1, patience=EARLY_STO
 checkpoint = ModelCheckpoint(os.path.join(OUTPUT_DIR, CHECKPOINT_MODEL_NAME), monitor='val_miou', verbose=1,
 save_best_only=True, mode='max', period=CHECKPOINT_PERIOD)
 
-print('---model 훈련 시작---')
-history = model.fit_generator(
-    train_generator,
-    steps_per_epoch=len(images_train) // BATCH_SIZE,
-    validation_data=validation_generator,
-    validation_steps=len(images_validation) // BATCH_SIZE,
-    callbacks=[checkpoint, es],
-    epochs=EPOCHS,
-    workers=WORKERS,
-    initial_epoch=INITIAL_EPOCH
-)
-print('---model 훈련 종료---')
+rlr = ReduceLROnPlateau(monitor='val_miou', patience=10, factor=0.5, mode='auto')
+# print('---model 훈련 시작---')
+# history = model.fit_generator(
+#     train_generator,
+#     steps_per_epoch=len(images_train) // BATCH_SIZE,
+#     validation_data=validation_generator,
+#     validation_steps=len(images_validation) // BATCH_SIZE,
+#     callbacks=[checkpoint, es, rlr],
+#     epochs=EPOCHS,
+#     workers=WORKERS,
+#     initial_epoch=INITIAL_EPOCH
+# )
+# print('---model 훈련 종료---')
 
-print('가중치 저장')
-model_weights_output = os.path.join(OUTPUT_DIR, FINAL_WEIGHTS_OUTPUT)
-model.save_weights(model_weights_output)
-print("저장된 가중치 명: {}".format(model_weights_output))
+# print('가중치 저장')
+# model_weights_output = os.path.join(OUTPUT_DIR, FINAL_WEIGHTS_OUTPUT)
+# model.save_weights(model_weights_output)
+# print("저장된 가중치 명: {}".format(model_weights_output))
 
-learning_rate = 0.0001
-model = get_model(MODEL_NAME, input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_filters=N_FILTERS, )
+learning_rate = 0.00001
+model = MultiResUnet(height=IMAGE_SIZE[0], width=IMAGE_SIZE[1], n_channels=N_CHANNELS,)
 model.compile(optimizer = Adam(learning_rate=learning_rate), loss = 'binary_crossentropy', metrics = ['accuracy', miou])
 model.summary()
 
-model.load_weights('D:\\_data\\dataset\\output\\model_MultiResUNet_sample_line_final_weights.h5')
+model.load_weights('D:\\_data\\dataset\\output\\checkpoint-MultiResUNet-sample_line-epoch_15.hdf5')
 
 y_pred_dict = {}
 
 for i in test_meta['test_img']:
     img = get_img_762bands(f'D:\\_data\\dataset\\test_img\\{i}')
-    y_pred = model.predict(np.array([img]), batch_size=1, verbose=0)
+    y_pred = model.predict(np.array([img]), batch_size=1, verbose=1)
     
     y_pred = np.where(y_pred[0, :, :, 0] > 0.25, 1, 0) # 임계값 처리
     y_pred = y_pred.astype(np.uint8)

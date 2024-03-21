@@ -1,218 +1,219 @@
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Conv2D, BatchNormalization, MaxPooling2D, UpSampling2D, Concatenate, Add, Activation
 import tensorflow as tf
+from tensorflow.keras import layers
+import numpy as np
+from tensorflow import keras
+from keras import utils
 
-def conv2d_batchnorm(x, filters, kernel_size=(2, 2), activation='relu', padding='same'):
-    x = Conv2D(filters, kernel_size, padding=padding)(x)
-    x = BatchNormalization()(x)
-    if activation == 'relu':
-        x = Activation('relu')(x)
-    return x
 
-def multiresblock(x, input_features, corresponding_unet_filters, alpha=1.67):
-    W = corresponding_unet_filters * alpha
+class DropPath(layers.Layer):
+    # borrowed from https://github.com/rishigami/Swin-Transformer-TF/blob/main/swintransformer/model.py
+    def __init__(self, drop_prob=None):
+        super().__init__()
+        self.drop_prob = drop_prob
 
-    temp = conv2d_batchnorm(x, int(W*0.167) + int(W*0.333) + int(W*0.5), kernel_size=(1, 1), activation=None)
-    a = conv2d_batchnorm(x, int(W*0.167), kernel_size=(3, 3), activation='relu')
-    b = conv2d_batchnorm(a, int(W*0.333), kernel_size=(3, 3), activation='relu')
-    c = conv2d_batchnorm(b, int(W*0.5), kernel_size=(3, 3), activation='relu')
-    x = Concatenate(axis=-1)([a, b, c])
-    x = BatchNormalization()(x)
-    x = Add()([temp, x])
-    x = BatchNormalization()(x)
-    return x
+    @staticmethod
+    def drop_path(x, drop_prob, is_training):
+        if (not is_training) or (drop_prob == 0.):
+            return x
 
-def respath(x, input_features, filters, respath_length):
-    shortcut = conv2d_batchnorm(x, filters, kernel_size=(1, 1), activation=None)
-    x = conv2d_batchnorm(x, filters, kernel_size=(3, 3), activation='relu')
-    x = Add()([shortcut, x])
-    x = Activation('relu')(x)
-    for _ in range(respath_length):
-        shortcut = conv2d_batchnorm(x, filters, kernel_size=(1, 1), activation=None)
-        x = conv2d_batchnorm(x, filters, kernel_size=(3, 3), activation='relu')
-        x = Add()([shortcut, x])
-        x = Activation('relu')(x)
-    return x
+        # Compute keep_prob
+        keep_prob = 1.0 - drop_prob
 
-def MultiResUNet(channels, filters=32, nclasses=1):
-    alpha = 1.67
+        # Compute drop_connect tensor
+        random_tensor = keep_prob
+        shape = (tf.shape(x)[0],) + (1,) * \
+            (len(tf.shape(x)) - 1)
+        random_tensor += tf.random.uniform(shape, dtype=x.dtype)
+        binary_tensor = tf.floor(random_tensor)
+        output = tf.math.divide(x, keep_prob) * binary_tensor
+        return output
 
-    inputs = Input(shape=(None, None, channels))
-    
-    multires1 = multiresblock(inputs, channels, filters)
-    pool1 = MaxPooling2D((2, 2))(multires1)
-    respath1 = respath(multires1, channels, filters, 4)
-    
-    multires2 = multiresblock(pool1, filters, filters*2)
-    pool2 = MaxPooling2D((2, 2))(multires2)
-    respath2 = respath(multires2, filters, filters*2, 3)
-    
-    multires3 = multiresblock(pool2, filters*2, filters*4)
-    pool3 = MaxPooling2D((2, 2))(multires3)
-    respath3 = respath(multires3, filters*2, filters*4, 2)
-    
-    multires4 = multiresblock(pool3, filters*4, filters*8)
-    pool4 = MaxPooling2D((2, 2))(multires4)
-    respath4 = respath(multires4, filters*4, filters*8, 1)
-    
-    multires5 = multiresblock(pool4, filters*8, filters*16)
-    
-    up6 = Concatenate()([UpSampling2D(size=(2, 2))(multires5), multires4])
-    multires6 = multiresblock(up6, filters*16, filters*8)
-    
-    up7 = Concatenate()([UpSampling2D(size=(2, 2))(multires6), multires3])
-    multires7 = multiresblock(up7, filters*8, filters*4)
-    
-    up8 = Concatenate()([UpSampling2D(size=(2, 2))(multires7), multires2])
-    multires8 = multiresblock(up8, filters*4, filters*2)
-    
-    up9 = Concatenate()([UpSampling2D(size=(2, 2))(multires8), multires1])
-    multires9 = multiresblock(up9, filters*2, filters)
-    
-    if nclasses > 1:
-        outputs = Conv2D(nclasses, (1, 1), activation='softmax')(multires9)
-    else:
-        outputs = Activation('sigmoid')(Conv2D(1, (1, 1))(multires9))
+    def call(self, x, training=None):
+        return self.drop_path(x, self.drop_prob, training)
 
-    model = Model(inputs, outputs)
+
+class LayerScale(layers.Layer):
+    def __init__(self, dim, init_value=1e-6, name='layer_scale', **kwargs):
+        super().__init__(**kwargs)
+        self.gamma = tf.Variable(
+            initial_value=init_value * tf.ones((dim), dtype=self.compute_dtype),
+            trainable=True,
+            name=f'{name}/gamma',
+            dtype=self.compute_dtype) if init_value > 0 else None
+
+    def call(self, x):
+        if self.gamma is not None:
+            x = self.gamma * x
+        return x   
+
+
+class DownSample(keras.Model):
+    def __init__(self, dim):
+        super().__init__()
+        self.norm = layers.LayerNormalization(epsilon=1e-6)
+        self.conv = layers.Conv2D(dim, kernel_size=2, strides=2, padding='same')
+
+    def call(self, x):
+        x = self.norm(x)
+        x = self.conv(x)
+        return x
+
+
+class Stem(keras.Model):
+    def __init__(self, dim):
+        super().__init__()
+        self.conv = layers.Conv2D(dim, kernel_size=4, strides=4, padding='valid')
+        self.norm = layers.LayerNormalization(epsilon=1e-6)
+
+    def call(self, x):
+        x = self.conv(x)
+        x = self.norm(x)
+        return x
+
+
+class Block(keras.Model):
+    def __init__(self, dim, drop_path=0., layer_scale_init_value=1e-6, **kwargs):
+        super().__init__(**kwargs)
+        self.dwconv = layers.DepthwiseConv2D(kernel_size=7, padding='same')
+        self.norm = layers.LayerNormalization(epsilon=1e-6)
+        self.pwconv1 = layers.Dense(4 * dim)
+        self.act = layers.Activation('gelu')
+        self.pwconv2 = layers.Dense(dim)
+        self.layer_scale = LayerScale(dim, layer_scale_init_value, name=f"{kwargs['name']}_layer_scale")
+        self.drop_path = DropPath(drop_path)
+
+    def call(self, x):
+        input = x
+        x = self.dwconv(x)
+        x = self.norm(x)
+        x = self.pwconv1(x)
+        x = self.act(x)
+        x = self.pwconv2(x)
+        x = self.layer_scale(x)
+        x = self.drop_path(x)
+        x = input + x
+        return x       
+
+
+class Head(keras.Model):
+    def __init__(self, num_classes, classifier_activation):
+        super().__init__()
+        self.avg_pool = layers.GlobalAveragePooling2D()
+        self.norm = layers.LayerNormalization()
+        self.predictions = layers.Dense(num_classes, activation=classifier_activation)
+
+    def call(self, x):
+        x = self.avg_pool(x)
+        x = self.norm(x)
+        x = self.predictions(x)
+        return x
+
+
+weights_1k = {
+    'convnext_tiny_224': 'https://github.com/zibbini/convnext-v2_tensorflow/releases/download/v0.1/convnext_tiny_1k_224_ema.h5',
+    'convnext_small_224': 'https://github.com/zibbini/convnext-v2_tensorflow/releases/download/v0.1/convnext_small_1k_224_ema.h5',
+    'convnext_base_224': 'https://github.com/zibbini/convnext-v2_tensorflow/releases/download/v0.1/convnext_base_1k_224_ema.h5',
+    'convnext_base_384': 'https://github.com/zibbini/convnext-v2_tensorflow/releases/download/v0.1/convnext_base_1k_384_ema.h5',
+    'convnext_large_224': 'https://github.com/zibbini/convnext-v2_tensorflow/releases/download/v0.1/convnext_large_1k_224_ema.h5',
+    'convnext_large_384': 'https://github.com/zibbini/convnext-v2_tensorflow/releases/download/v0.1/convnext_large_1k_384_ema.h5'
+}
+
+weights_22k = {
+    'convnext_tiny_224': 'https://github.com/zibbini/convnext-v2_tensorflow/releases/download/v0.1/convnext_tiny_22k_1k_224.h5',
+    'convnext_tiny_384': 'https://github.com/zibbini/convnext-v2_tensorflow/releases/download/v0.1/convnext_tiny_22k_1k_384.h5',
+    'convnext_small_224': 'https://github.com/zibbini/convnext-v2_tensorflow/releases/download/v0.1/convnext_small_22k_1k_224_ema.h5',
+    'convnext_small_384': 'https://github.com/zibbini/convnext-v2_tensorflow/releases/download/v0.1/convnext_small_22k_1k_384_ema.h5',
+    'convnext_base_224': 'https://github.com/zibbini/convnext-v2_tensorflow/releases/download/v0.1/convnext_base_22k_1k_224_ema.h5',
+    'convnext_base_384': 'https://github.com/zibbini/convnext-v2_tensorflow/releases/download/v0.1/convnext_base_22k_1k_384_ema.h5',
+    'convnext_large_224': 'https://github.com/zibbini/convnext-v2_tensorflow/releases/download/v0.1/convnext_large_22k_1k_224_ema.h5',
+    'convnext_large_384': 'https://github.com/zibbini/convnext-v2_tensorflow/releases/download/v0.1/convnext_large_22k_1k_384_ema.h5',    
+    'convnext_xlarge_224': 'https://github.com/zibbini/convnext-v2_tensorflow/releases/download/v0.1/convnext_xlarge_22k_1k_224_ema.h5',   
+    'convnext_xlarge_384': 'https://github.com/zibbini/convnext-v2_tensorflow/releases/download/v0.1/convnext_xlarge_22k_1k_384_ema.h5'
+}
+
+
+def convnext(
+    input_shape=None,
+    input_tensor=None, 
+    num_classes=1000, 
+    depths=[3,3,9,3], 
+    dims=[96,192,384,768], 
+    drop_path_rate=0., 
+    head_init_scale=1,
+    include_top=True,
+    classifier_activation='softmax',
+    weights=None,
+    model_name=None):
+    
+    if input_shape is None:
+        input_shape = (224, 224, 3)
+
+    if input_tensor is None:
+        input_tensor = keras.Input(input_shape)
+
+    x = input_tensor
+    dp_rates = [dp for dp in np.linspace(0, drop_path_rate, sum(depths))]
+
+    current = 0
+    for i in range(4):
+        if i == 0:
+            x = Stem(dims[i])(x)
+        else:
+            x = DownSample(dims[i])(x)
+
+        for j in range(depths[i]):
+            x = Block(dims[i], dp_rates[current + j], name=f'block_{i}_{j}')(x)
+
+        current += depths[i]
+
+    if include_top:
+        x = Head(num_classes, classifier_activation)(x)
+
+    outputs = x
+    inputs = utils.layer_utils.get_source_inputs(input_tensor)[0]
+
+    model = keras.Model(inputs, outputs, name=model_name)
+    if weights is not None:
+        key = f'{model_name}_{input_shape[0]}'
+        url = weights_1k[key] if weights == 'imagenet_1k' else weights_22k[key]
+        pretrained_weights = keras.utils.get_file(origin=url)
+        model.load_weights(pretrained_weights)
+
     return model
 
-model = MultiResUNet(channels=3, filters=32, nclasses=10)
-model.summary()
 
-
-
-
-
-
-
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Conv2D, BatchNormalization, Activation, Add, MaxPooling2D, Concatenate
-
-def conv_block(x, filters, kernel_size=(3, 3), strides=(1, 1), padding='same'):
-    x = Conv2D(filters, kernel_size, strides=strides, padding=padding)(x)
-    x = BatchNormalization()(x)
-    x = Activation('relu')(x)
-    return x
-
-def convnext_block(x, filters, cardinality=32, strides=(1, 1), padding='same'):
-    grouped_channels = filters // cardinality
-    groups = []
-
-    for i in range(cardinality):
-        group = conv_block(x, grouped_channels, strides=strides, padding=padding)
-        groups.append(group)
-
-    x = Concatenate()(groups)
-    x = Conv2D(filters, (1, 1), strides=(1, 1), padding='same')(x)
-    x = BatchNormalization()(x)
-    x = Activation('relu')(x)
-    return x
-
-def bottleneck_block(x, filters, cardinality=32, strides=(1, 1), padding='same'):
-    shortcut = x
-
-    x = convnext_block(x, filters, cardinality, strides, padding)
-    x = conv_block(x, filters, kernel_size=(1, 1), padding='valid')
-
-    if strides != (1, 1) or shortcut.shape[-1] != filters:
-        shortcut = Conv2D(filters, (1, 1), strides=strides, padding='same')(shortcut)
-        shortcut = BatchNormalization()(shortcut)
-
-    x = Add()([x, shortcut])
-    x = Activation('relu')(x)
-    return x
-
-def ConvNeXt(input_shape, num_classes, base_filters=64, cardinality=32):
-    inputs = Input(shape=input_shape)
-
-    x = conv_block(inputs, base_filters)
-    x = MaxPooling2D((2, 2))(x)
-
-    x = bottleneck_block(x, base_filters * 2, cardinality, strides=(2, 2))
-    x = bottleneck_block(x, base_filters * 2, cardinality)
-
-    x = bottleneck_block(x, base_filters * 4, cardinality, strides=(2, 2))
-    x = bottleneck_block(x, base_filters * 4, cardinality)
-
-    x = bottleneck_block(x, base_filters * 8, cardinality, strides=(2, 2))
-    x = bottleneck_block(x, base_filters * 8, cardinality)
-
-    x = MaxPooling2D((2, 2))(x)
-    x = conv_block(x, base_filters * 16)
-    
-    x = GlobalAveragePooling2D()(x)
-    outputs = Dense(num_classes, activation='softmax')(x)
-
-    model = Model(inputs, outputs)
+def convnext_atto(**kwargs):
+    model = convnext(depths=[2, 2, 6, 2], dims=[40, 80, 160, 320], model_name='convnext_atto', **kwargs)
     return model
 
-# 모델 생성
-input_shape = (224, 224, 3)  # 예시로 입력 이미지 크기는 (224, 224, 3)으로 설정
-num_classes = 2  # 이진 분류 예시
-model = ConvNeXt(input_shape, num_classes)
-
-# 모델 요약 출력
-model.summary()
-
-
-
-
-
-
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, Dropout, UpSampling2D, concatenate
-
-def conv_block(inputs, filters, kernel_size=(3, 3), activation='relu', padding='same'):
-    conv = Conv2D(filters, kernel_size, activation=activation, padding=padding)(inputs)
-    conv = Conv2D(filters, kernel_size, activation=activation, padding=padding)(conv)
-    return conv
-
-def unet(input_shape, num_classes):
-    inputs = Input(input_shape)
-    
-    # Encoder
-    conv1 = conv_block(inputs, 64)
-    pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
-    
-    conv2 = conv_block(pool1, 128)
-    pool2 = MaxPooling2D(pool_size=(2, 2))(conv2)
-    
-    conv3 = conv_block(pool2, 256)
-    pool3 = MaxPooling2D(pool_size=(2, 2))(conv3)
-    
-    conv4 = conv_block(pool3, 512)
-    pool4 = MaxPooling2D(pool_size=(2, 2))(conv4)
-    
-    conv5 = conv_block(pool4, 1024)
-    
-    # Decoder
-    up6 = UpSampling2D(size=(2, 2))(conv5)
-    concat6 = concatenate([conv4, up6], axis=3)
-    conv6 = conv_block(concat6, 512)
-    
-    up7 = UpSampling2D(size=(2, 2))(conv6)
-    concat7 = concatenate([conv3, up7], axis=3)
-    conv7 = conv_block(concat7, 256)
-    
-    up8 = UpSampling2D(size=(2, 2))(conv7)
-    concat8 = concatenate([conv2, up8], axis=3)
-    conv8 = conv_block(concat8, 128)
-    
-    up9 = UpSampling2D(size=(2, 2))(conv8)
-    concat9 = concatenate([conv1, up9], axis=3)
-    conv9 = conv_block(concat9, 64)
-    
-    # Output layer
-    outputs = Conv2D(num_classes, (1, 1), activation='softmax')(conv9)
-    
-    model = Model(inputs=inputs, outputs=outputs)
+def convnext_femto(**kwargs):
+    model = convnext(depths=[2, 2, 6, 2], dims=[48, 96, 192, 384], model_name='convnext_femto', **kwargs)
     return model
 
-# 모델 생성
-input_shape = (256, 256, 3)  # 입력 이미지 크기
-num_classes = 1  # 출력 클래스 수 (이진 분할)
-model = unet(input_shape, num_classes)
+def convnext_pico(**kwargs):
+    model = convnext(depths=[2, 2, 6, 2], dims=[64, 128, 256, 512], model_name='convnext_pico', **kwargs)
+    return model
 
-# 모델 요약 출력
-model.summary()
+def convnext_nano(**kwargs):
+    model = convnext(depths=[2, 2, 8, 2], dims=[80, 160, 320, 640], model_name='convnext_nano', **kwargs)
+    return model
+
+def convnext_tiny(**kwargs):
+    model = convnext(depths=[3, 3, 9, 3], dims=[96, 192, 384, 768], model_name='convnext_tiny', **kwargs)
+    return model
+
+def convnext_small(**kwargs):
+    model = convnext(depths=[3, 3, 27, 3], dims=[96, 192, 384, 768], model_name='convnext_small', **kwargs)
+    return model
+
+def convnext_base(**kwargs):
+    model = convnext(depths=[3, 3, 27, 3], dims=[128, 256, 512, 1024], model_name='convnext_base', **kwargs)
+    return model
+
+def convnext_large(**kwargs):
+    model = convnext(depths=[3, 3, 27, 3], dims=[192, 384, 768, 1536], model_name='convnext_large', **kwargs)
+    return model
+
+def convnext_xlarge(**kwargs):
+    model = convnext(depths=[3, 3, 27, 3], dims=[256, 512, 1024, 2048], model_name='convnext_xlarge', **kwargs)
+    return model

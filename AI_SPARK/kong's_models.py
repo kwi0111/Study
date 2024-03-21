@@ -133,82 +133,66 @@ def conv2d_block(input_tensor, n_filters, kernel_size = 3, batchnorm = True):
 
 #Attention Gate
 def attention_gate(F_g, F_l, inter_channel):
-    """
-    An attention gate.
-
-    Arguments:
-    - F_g: Gating signal typically from a coarser scale.
-    - F_l: The feature map from the skip connection.
-    - inter_channel: The number of channels/filters in the intermediate layer.
-    """
-    # Intermediate transformation on the gating signal
-    W_g = Conv2D(inter_channel, kernel_size=1, strides=1, padding='same', kernel_initializer='he_normal')(F_g)
+    # F_g의 채널 수를 중간 채널 수로 조정
+    W_g = Conv2D(inter_channel, kernel_size=1, padding='same')(F_g)
     W_g = BatchNormalization()(W_g)
+    W_g = Activation('relu')(W_g)
 
-    # Intermediate transformation on the skip connection feature map
-    W_x = Conv2D(inter_channel, kernel_size=1, strides=1, padding='same', kernel_initializer='he_normal')(F_l)
-    W_x = BatchNormalization()(W_x)
+    # F_l의 채널 수를 중간 채널 수로 조정
+    W_l = Conv2D(inter_channel, kernel_size=1, padding='same')(F_l)
+    W_l = BatchNormalization()(W_l)
+    W_l = Activation('relu')(W_l)
 
-    # Combine the transformations
-    psi = Activation('relu')(add([W_g, W_x]))
-    psi = Conv2D(1, kernel_size=1, strides=1, padding='same', kernel_initializer='he_normal')(psi)
-    psi = BatchNormalization()(psi)
+    # Add() 연산 전에 W_g와 W_l의 형태를 일치시킴
+    psi = Add()([W_g, W_l])
+    psi = Activation('relu')(psi)
+    psi = Conv2D(1, (1, 1), padding='same')(psi)
     psi = Activation('sigmoid')(psi)
-
-    # Apply the attention coefficients to the feature map from the skip connection
+    
+    # Attention map을 F_l에 적용
     return multiply([F_l, psi])
 
-from keras.applications import VGG16
-def get_pretrained_attention_unet(input_height=256, input_width=256, nClasses=1, n_filters=16, dropout=0.05, batchnorm=True, n_channels=3):
-    base_model = VGG16(weights='imagenet', include_top=False, input_shape=(input_height, input_width, n_channels))
-    
-    # Define the inputs
-    inputs = base_model.input
-    
-    # Use specific layers from the VGG16 model for skip connections
-    s1 = base_model.get_layer("block1_conv2").output
-    s2 = base_model.get_layer("block2_conv2").output
-    s3 = base_model.get_layer("block3_conv3").output
-    s4 = base_model.get_layer("block4_conv3").output
-    bridge = base_model.get_layer("block5_conv3").output
-    
+
+from keras.applications import ResNet50
+
+def get_pretrained_attention_unet(input_height=256, input_width=256, n_classes=1, n_filters=16, n_channels=3):
+    inputs = Input(shape=(input_height, input_width, n_channels))
+    base_model = ResNet50(weights='imagenet', include_top=False, input_tensor=inputs)
+
+    # Skip connections
+    s1 = base_model.get_layer("conv2_block3_out").output
+    s2 = base_model.get_layer("conv3_block4_out").output
+    s3 = base_model.get_layer("conv4_block6_out").output
+    s4 = base_model.get_layer("conv5_block3_out").output
+    bridge = base_model.output
+
     # Decoder with attention gates
     d1 = UpSampling2D((2, 2))(bridge)
     d1 = concatenate([d1, attention_gate(d1, s4, n_filters*8)])
-    d1 = conv2d_block(d1, n_filters*8, kernel_size=3, batchnorm=batchnorm)
-    
-    d2 = UpSampling2D((2, 2))(d1)
-    d2 = concatenate([d2, attention_gate(d2, s3, n_filters*4)])
-    d2 = conv2d_block(d2, n_filters*4, kernel_size=3, batchnorm=batchnorm)
-    
-    d3 = UpSampling2D((2, 2))(d2)
-    d3 = concatenate([d3, attention_gate(d3, s2, n_filters*2)])
-    d3 = conv2d_block(d3, n_filters*2, kernel_size=3, batchnorm=batchnorm)
-    
-    d4 = UpSampling2D((2, 2))(d3)
-    d4 = concatenate([d4, attention_gate(d4, s1, n_filters)])
-    d4 = conv2d_block(d4, n_filters, kernel_size=3, batchnorm=batchnorm)
-    
-    outputs = Conv2D(nClasses, (1, 1), activation='sigmoid')(d4)
+    d1 = conv2d_block(d1, n_filters*8)
+
+    # 나머지 디코더 부분을 여기에 구현
+
+    outputs = Conv2D(n_classes, (1, 1), activation='sigmoid')(d1)
     model = Model(inputs=[inputs], outputs=[outputs])
+
     return model
 
-def get_model(model_name, nClasses=1, input_height=128, input_width=128, n_filters = 16, dropout = 0.05, batchnorm = True, n_channels=3):
+def get_model(model_name, n_classes=1, input_height=128, input_width=128, n_filters = 16, dropout = 0.1, batchnorm = True, n_channels=3):
     
     if model_name == 'pretrained_attention_unet':
         model = get_pretrained_attention_unet
         
         
     return model(
-            nClasses      = nClasses,
-            input_height  = input_height,
-            input_width   = input_width,
-            n_filters     = n_filters,
-            dropout       = dropout,
-            batchnorm     = batchnorm,
-            n_channels    = n_channels
+            # n_classes      = n_classes,
+            # input_height  = input_height,
+            # input_width   = input_width,
+            # n_filters     = n_filters,
+            # dropout       = dropout,
+            # batchnorm     = batchnorm,
+            # n_channels    = n_channels
         )
-
 
 
     
@@ -244,7 +228,7 @@ save_name = 'sample_line'
 N_FILTERS = 16 # 필터수 지정
 N_CHANNELS = 3 # channel 지정
 EPOCHS = 1 # 훈련 epoch 지정
-BATCH_SIZE = 32 # batch size 지정
+BATCH_SIZE = 16 # batch size 지정
 IMAGE_SIZE = (256, 256) # 이미지 크기 지정
 MODEL_NAME = 'pretrained_attention_unet' # 모델 이름
 RANDOM_STATE = 42 # seed 고정
@@ -259,7 +243,7 @@ OUTPUT_DIR = 'D:\\_data\\dataset\\output\\'
 WORKERS = 22
 
 # 조기종료
-EARLY_STOP_PATIENCE = 20
+EARLY_STOP_PATIENCE = 30
 
 # 중간 가중치 저장 이름
 CHECKPOINT_PERIOD = 5
@@ -309,7 +293,7 @@ validation_generator = generator_from_lists(images_validation, masks_validation,
 
 
 #miou metric
-Threshold  = 0.75
+Threshold  = 0.5
 def miou(y_true, y_pred, smooth=1e-6):
     # 임계치 기준으로 이진화
     y_pred = tf.cast(y_pred > Threshold , tf.float32)
@@ -323,11 +307,10 @@ def miou(y_true, y_pred, smooth=1e-6):
     return miou
 
 # model 불러오기
-learning_rate = 0.001
-# model = get_model(MODEL_NAME, input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_filters=N_FILTERS,)
-model = get_model(MODEL_NAME, input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_filters=N_FILTERS, n_channels=N_CHANNELS)
+learning_rate = 0.0001
+model = get_model(MODEL_NAME, input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_filters=N_FILTERS,)
 model.compile(optimizer = Adam(learning_rate=learning_rate), loss = 'binary_crossentropy', metrics = ['accuracy', miou])
-# model.summary()
+model.summary()
 
 # checkpoint 및 조기종료 설정
 es = EarlyStopping(monitor='val_miou', mode='max', verbose=1, patience=EARLY_STOP_PATIENCE, restore_best_weights=True)
@@ -354,21 +337,24 @@ model_weights_output = os.path.join(OUTPUT_DIR, FINAL_WEIGHTS_OUTPUT)
 model.save_weights(model_weights_output)
 print("저장된 가중치 명: {}".format(model_weights_output))
 
-# learning_rate = 0.001
-# model = get_model(MODEL_NAME, input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_filters=N_FILTERS, )
-# model.compile(optimizer = Adam(learning_rate=learning_rate), loss = 'binary_crossentropy', metrics = ['accuracy'])
-# model.summary()
+learning_rate = 0.001
+model = get_model(MODEL_NAME, input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_filters=N_FILTERS, )
+model.compile(optimizer = Adam(learning_rate=learning_rate), loss = 'binary_crossentropy', metrics = ['accuracy', miou])
+model.summary()
 
-# model.load_weights('D:\\_data\\dataset\\output\\model_pretrained_attention_unet_sample_line_final_weights.h5')
+model.load_weights('D:\\_data\\dataset\\output\\model_pretrained_attention_unet_sample_line_final_weights.h5')
 
 y_pred_dict = {}
 
 for i in test_meta['test_img']:
     img = get_img_762bands(f'D:\\_data\\dataset\\test_img\\{i}')
-    y_pred = model.predict(np.array([img]), batch_size=1, verbose=0)
+    y_pred = model.predict(np.array([img]), batch_size=1, verbose=1)
     
     y_pred = np.where(y_pred[0, :, :, 0] > 0.25, 1, 0) # 임계값 처리
     y_pred = y_pred.astype(np.uint8)
     y_pred_dict[i] = y_pred
 
-joblib.dump(y_pred_dict, 'D:\\_data\\dataset\\output\\y_pred.pkl')
+from datetime import datetime
+dt = datetime.now()
+joblib.dump(y_pred_dict, f'D:\\_data\\dataset\\output\\y_pred_{dt.day}_{dt.hour}_{dt.minute}.pkl')
+print(f'끝. : y_pred_{dt.day}_{dt.hour}_{dt.minute}.pkl ')

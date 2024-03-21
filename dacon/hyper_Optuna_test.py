@@ -27,16 +27,35 @@ def objectiveRF(trial):
     param = {
         'n_estimators': trial.suggest_int('n_estimators', 10, 1000),  # 조정: 트리의 수를 200에서 1000 사이로 확장
         'criterion': trial.suggest_categorical('criterion', ['gini', 'entropy']),
-        'max_depth': trial.suggest_int('max_depth', 10, 100),  # 조정: 최대 깊이를 더 넓은 범위로 조정하여 더 깊은 트리 허용
+        # 'max_depth': trial.suggest_int('max_depth', 10, 100),  # 조정: 최대 깊이를 더 넓은 범위로 조정하여 더 깊은 트리 허용
         'min_samples_split': trial.suggest_int('min_samples_split', 2, 20),  # 조정: 분할에 필요한 최소 샘플 수 범위 조정
         'min_samples_leaf': trial.suggest_int('min_samples_leaf', 1, 10),  # 조정: 리프에 필요한 최소 샘플 수 조정
-        # 'min_weight_fraction_leaf': trial.suggest_float('min_weight_fraction_leaf', 0, 0.05),  # 복원: 리프의 최소 가중치 비율 조정
+        'min_weight_fraction_leaf': trial.suggest_float('min_weight_fraction_leaf', 0, 0.5),  # 복원: 리프의 최소 가중치 비율 조정
         'max_features': trial.suggest_categorical('max_features', ['auto', 'sqrt', 'log2']),  # 조정: 최대 특성 수 결정
-        'max_leaf_nodes': trial.suggest_int('max_leaf_nodes', 100, 2000),  # 복원 및 조정: 최대 리프 노드 수를 100에서 1000 사이로 설정
-        # 'min_impurity_decrease': trial.suggest_float('min_impurity_decrease', 0.0, 0.1),  # 조정: 불순도 감소량의 최소값 조정
+        # 'max_leaf_nodes': trial.suggest_int('max_leaf_nodes', 2, 2000),  # 복원 및 조정: 최대 리프 노드 수를 100에서 1000 사이로 설정
+        'min_impurity_decrease': trial.suggest_float('min_impurity_decrease', 0.0, 0.1),  # 조정: 불순도 감소량의 최소값 조정
         # 'bootstrap': trial.suggest_categorical('bootstrap', [True, False]),  # 조정: 부트스트랩 샘플링을 사용할지 여부
         'random_state': RANDOM_STATE
     }
+
+# max_depth:
+# 기본값: None
+# 범위: None 또는 양의 정수. None으로 설정하면 노드가 모든 리프가 순수해질 때까지 확장됩니다. 양의 정수를 설정하면 트리의 최대 깊이를 제한합니다.
+# min_samples_split:
+# 기본값: 2
+# 범위: 2 이상의 정수 또는 0과 1 사이의 실수 (비율을 나타냄, (0, 1] ). 내부 노드를 분할하기 위해 필요한 최소 샘플 수를 지정합니다.
+# min_samples_leaf:
+# 기본값: 1
+# 범위: 1 이상의 정수 또는 0과 0.5 사이의 실수 (비율을 나타냄, (0, 0.5] ). 리프 노드가 가져야 하는 최소 샘플 수를 지정합니다.
+# min_weight_fraction_leaf:
+# 기본값: 0.0
+# 범위: 0.0에서 0.5 사이의 실수. 리프 노드에 있어야 하는 샘플의 최소 가중치 비율을 지정합니다.
+# max_leaf_nodes:
+# 기본값: None
+# 범위: None 또는 양의 정수. 리프 노드의 최대 수를 제한합니다. None은 무제한을 의미합니다.
+# min_impurity_decrease:
+# 기본값: 0.0
+# 범위: 0.0 이상의 실수. 노드를 분할할 때 감소해야 하는 불순도의 최소량을 지정합니다.
 
 # 최고점
 # 110,gini,409,11,9,0.0003708462079350574,auto,398,5.396924281913153e-06,True // 
@@ -56,8 +75,8 @@ def objectiveRF(trial):
 
     return np.mean(scores)
 
-study = optuna.create_study(direction='maximize', pruner=optuna.pruners.MedianPruner(n_startup_trials=50, n_warmup_steps=100, interval_steps=1))
-study.optimize(objectiveRF, n_trials=500) # , timeout=600)
+study = optuna.create_study(direction='maximize', pruner=optuna.pruners.MedianPruner(n_startup_trials=80, n_warmup_steps=150, interval_steps=1)) # 50 100
+study.optimize(objectiveRF, n_trials=8000  , timeout=3600)
 
 best_params = study.best_params
 
@@ -86,6 +105,10 @@ for label in submission_csv:
 import datetime
 dt = datetime.datetime.now()
 submission_csv.to_csv(path+f"submit_{dt.day}day{dt.hour:2}{dt.minute:2}_AUC_{auc:4}.csv",index=False)
+
+
+
+
 
 '''
 Feature 0 (Sex): 0.0187113169480082
