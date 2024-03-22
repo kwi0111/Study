@@ -18,7 +18,7 @@ np.random.seed(RANDOM_STATE)
 path = 'C:\\_data\\dacon\\hyper\\'
 train_csv = pd.read_csv(path + 'train.csv')
 
-x = train_csv.drop(['person_id', 'login', 'Sex', 'email_type', 'apple_rat'], axis=1)
+x = train_csv.drop(['person_id', 'login', ], axis=1)    #  'Sex', 'email_type', 'apple_rat'
 y = train_csv['login']
 
 # x_train, x_test, y_train, y_test = train_test_split(x,y,train_size=0.8, random_state=RANDOM_STATE)
@@ -28,12 +28,12 @@ def objectiveRF(trial):
         'n_estimators': trial.suggest_int('n_estimators', 10, 1000),  # 조정: 트리의 수를 200에서 1000 사이로 확장
         'criterion': trial.suggest_categorical('criterion', ['gini', 'entropy']),
         # 'max_depth': trial.suggest_int('max_depth', 10, 100),  # 조정: 최대 깊이를 더 넓은 범위로 조정하여 더 깊은 트리 허용
-        'min_samples_split': trial.suggest_int('min_samples_split', 2, 20),  # 조정: 분할에 필요한 최소 샘플 수 범위 조정
-        'min_samples_leaf': trial.suggest_int('min_samples_leaf', 1, 10),  # 조정: 리프에 필요한 최소 샘플 수 조정
+        'min_samples_split': trial.suggest_int('min_samples_split', 2, 25),  # 조정: 분할에 필요한 최소 샘플 수 범위 조정
+        'min_samples_leaf': trial.suggest_int('min_samples_leaf', 1, 15),  # 조정: 리프에 필요한 최소 샘플 수 조정
         'min_weight_fraction_leaf': trial.suggest_float('min_weight_fraction_leaf', 0, 0.5),  # 복원: 리프의 최소 가중치 비율 조정
         'max_features': trial.suggest_categorical('max_features', ['auto', 'sqrt', 'log2']),  # 조정: 최대 특성 수 결정
         # 'max_leaf_nodes': trial.suggest_int('max_leaf_nodes', 2, 2000),  # 복원 및 조정: 최대 리프 노드 수를 100에서 1000 사이로 설정
-        'min_impurity_decrease': trial.suggest_float('min_impurity_decrease', 0.0, 0.1),  # 조정: 불순도 감소량의 최소값 조정
+        # 'min_impurity_decrease': trial.suggest_float('min_impurity_decrease', 0.0, 0.1),  # 조정: 불순도 감소량의 최소값 조정
         # 'bootstrap': trial.suggest_categorical('bootstrap', [True, False]),  # 조정: 부트스트랩 샘플링을 사용할지 여부
         'random_state': RANDOM_STATE
     }
@@ -75,13 +75,13 @@ def objectiveRF(trial):
 
     return np.mean(scores)
 
-study = optuna.create_study(direction='maximize', pruner=optuna.pruners.MedianPruner(n_startup_trials=80, n_warmup_steps=150, interval_steps=1)) # 50 100
-study.optimize(objectiveRF, n_trials=8000  , timeout=3600)
+study = optuna.create_study(direction='maximize', pruner=optuna.pruners.MedianPruner(n_startup_trials=50, n_warmup_steps=100, interval_steps=1)) # 50 100
+study.optimize(objectiveRF, n_trials=1000  )#, timeout=1000)
 
 best_params = study.best_params
 
-optuna.visualization.plot_param_importances(study)      # 파라미터 중요도 확인 그래프
-optuna.visualization.plot_optimization_history(study)   # 최적화 과정 시각화
+# optuna.visualization.plot_param_importances(study)      # 파라미터 중요도 확인 그래프
+# optuna.visualization.plot_optimization_history(study)   # 최적화 과정 시각화
 
 model = RandomForestClassifier(**best_params, random_state=RANDOM_STATE)
 model.fit(x, y)

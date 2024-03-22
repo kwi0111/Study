@@ -80,8 +80,8 @@ def remove_outliers(df, column):
     Q1 = df[column].quantile(0.25)
     Q3 = df[column].quantile(0.75)
     IQR = Q3 - Q1
-    lower_bound = Q1 - 1.5 * IQR
-    upper_bound = Q3 + 1.5 * IQR
+    lower_bound = Q1 - 1.2 * IQR
+    upper_bound = Q3 + 1.2 * IQR
     return df[(df[column] >= lower_bound) & (df[column] <= upper_bound)]
 
 # 숫자형 컬럼에 대해 이상치 제거
@@ -189,7 +189,7 @@ def objective(trial):
 
 
 study = optuna.create_study(direction='minimize')
-study.optimize(objective, n_trials=1000000, timeout=3600) #,timeout=600)  # 100회 시도하거나, 총 600초가 경과하면 종료
+study.optimize(objective, n_trials=1000) #,timeout=600)  # 100회 시도하거나, 총 600초가 경과하면 종료
 
 print('Number of finished trials:', len(study.trials))
 print('Best trial:', study.best_trial.params)

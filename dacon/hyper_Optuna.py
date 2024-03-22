@@ -56,8 +56,8 @@ def objectiveRF(trial):
 
     return np.mean(scores)
 
-study = optuna.create_study(direction='maximize', pruner=optuna.pruners.MedianPruner(n_startup_trials=50, n_warmup_steps=100, interval_steps=1))
-study.optimize(objectiveRF, n_trials=500) # , timeout=600)
+study = optuna.create_study(direction='maximize', pruner=optuna.pruners.MedianPruner(n_startup_trials=80, n_warmup_steps=200, interval_steps=1))
+study.optimize(objectiveRF, n_trials=15000, timeout=25000)
 
 best_params = study.best_params
 
