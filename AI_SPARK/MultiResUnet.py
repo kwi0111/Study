@@ -445,7 +445,21 @@ es = EarlyStopping(monitor='val_miou', mode='max', verbose=0, patience=EARLY_STO
 checkpoint = ModelCheckpoint(os.path.join(OUTPUT_DIR, CHECKPOINT_MODEL_NAME), monitor='val_miou', verbose=1,
 save_best_only=True, mode='max', period=CHECKPOINT_PERIOD)
 # Reduce
-rlr = ReduceLROnPlateau(monitor='val_miou', patience=6, factor=0.5, mode='auto')
+rlr = ReduceLROnPlateau(monitor='val_miou', patience=5, factor=0.5, mode='auto')
+
+
+# from keras.callbacks import LearningRateScheduler
+# import tensorflow as tf
+# import numpy as np
+# def cosine_decay(epoch, max_epochs=EPOCHS, initial_learning_rate=learning_rate, min_learning_rate=0.00001):
+#     alpha = min_learning_rate / initial_learning_rate
+#     cosine_decay = 0.5 * (1 + tf.math.cos(np.pi * epoch / max_epochs))
+#     decayed = (1 - alpha) * cosine_decay + alpha
+#     decayed_learning_rate = initial_learning_rate * decayed
+#     return decayed_learning_rate
+# rlr = LearningRateScheduler(lambda epoch: cosine_decay(epoch, max_epochs=EPOCHS, initial_learning_rate=learning_rate), verbose=1)
+
+
 
 print('---model 훈련 시작---')
 history = model.fit(
