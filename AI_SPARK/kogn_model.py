@@ -29,6 +29,8 @@ from sklearn.model_selection import train_test_split
 import joblib
 import numpy as np
 from keras.callbacks import ReduceLROnPlateau
+import segmentation_models as sm
+import tensorflow_addons as tfa
 
 from keras.models import Model
 from keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, concatenate, Dropout, BatchNormalization, Activation, Add
@@ -65,7 +67,7 @@ def get_img_arr(path):
     return img
 
 def get_img_762bands(path):
-    img = rasterio.open(path).read((7,6,2)).transpose((1, 2, 0))    
+    img = rasterio.open(path).read((7,6,5)).transpose((1, 2, 0))    
     img = np.float32(img)/MAX_PIXEL_VALUE
     
     return img
@@ -122,14 +124,14 @@ def conv2d_block(input_tensor, n_filters, kernel_size = 3, batchnorm = True):
                padding="same")(input_tensor)
     if batchnorm:
         x = BatchNormalization()(x)
-    x = Activation("relu")(x)
+    x = Activation("swish")(x)
 
     # second layer
     x = Conv2D(filters=n_filters, kernel_size=(kernel_size, kernel_size), kernel_initializer="he_normal",
                padding="same")(x)
     if batchnorm:
         x = BatchNormalization()(x)
-    x = Activation("relu")(x)
+    x = Activation("swish")(x)
     return x
 
 #Attention Gate
@@ -151,7 +153,7 @@ def attention_gate(F_g, F_l, inter_channel):
     W_x = BatchNormalization()(W_x)
 
     # Combine the transformations
-    psi = Activation('relu')(add([W_g, W_x]))
+    psi = Activation('swish')(add([W_g, W_x]))
     psi = Conv2D(1, kernel_size=1, strides=1, padding='same', kernel_initializer='he_normal')(psi)
     psi = BatchNormalization()(psi)
     psi = Activation('sigmoid')(psi)
@@ -258,7 +260,7 @@ OUTPUT_DIR = 'D:\\_data\\dataset\\output\\'
 WORKERS = 22
 
 # 조기종료
-EARLY_STOP_PATIENCE = 30
+EARLY_STOP_PATIENCE = 15
 
 # 중간 가중치 저장 이름
 CHECKPOINT_PERIOD = 5
@@ -321,20 +323,31 @@ def miou(y_true, y_pred, smooth=1e-6):
     return miou
 
 # model 불러오기
-learning_rate = 0.0001
-model = get_model(MODEL_NAME, input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_filters=N_FILTERS, n_channels=N_CHANNELS)
-model.compile(optimizer = Adam(learning_rate=learning_rate), loss = 'binary_crossentropy', metrics = ['accuracy', miou])
+# learning_rate = 0.0001
+# model = get_model(MODEL_NAME, input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_filters=N_FILTERS, n_channels=N_CHANNELS)
+# model.compile(optimizer = Adam(learning_rate=learning_rate), loss = 'binary_crossentropy', metrics = ['accuracy', miou])
 # model.summary()
 
+
+model = get_model(MODEL_NAME, input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_filters=N_FILTERS, n_channels=N_CHANNELS)
+optimizer = Adam(learning_rate=0.001)
+model.compile(
+              optimizer=optimizer,
+            #   loss = sm.losses.binary_focal_dice_loss,
+              loss=sm.losses.bce_jaccard_loss, 
+              metrics=['accuracy', sm.metrics.iou_score, miou])
+
+
+
 # checkpoint 및 조기종료 설정
-es = EarlyStopping(monitor='val_miou', mode='max', verbose=1, patience=EARLY_STOP_PATIENCE, restore_best_weights=True)
-checkpoint = ModelCheckpoint(os.path.join(OUTPUT_DIR, CHECKPOINT_MODEL_NAME), monitor='val_miou', verbose=1,
+es = EarlyStopping(monitor='val_iou_score', mode='max', verbose=1, patience=EARLY_STOP_PATIENCE, restore_best_weights=True)
+checkpoint = ModelCheckpoint(os.path.join(OUTPUT_DIR, CHECKPOINT_MODEL_NAME), monitor='val_iou_score', verbose=1,
 save_best_only=True, mode='max', period=CHECKPOINT_PERIOD)
 
-rlr = ReduceLROnPlateau(monitor='val_miou', patience=15, factor=0.5, mode='auto')
+rlr = ReduceLROnPlateau(monitor='val_iou_score', patience=5, factor=0.5, mode='auto')
 
 print('---model 훈련 시작---')
-history = model.fit_generator(
+history = model.fit(
     train_generator,
     steps_per_epoch=len(images_train) // BATCH_SIZE,
     validation_data=validation_generator,
@@ -346,10 +359,6 @@ history = model.fit_generator(
 )
 print('---model 훈련 종료---')
 
-print('가중치 저장')
-model_weights_output = os.path.join(OUTPUT_DIR, FINAL_WEIGHTS_OUTPUT)
-model.save_weights(model_weights_output)
-print("저장된 가중치 명: {}".format(model_weights_output))
 
 # learning_rate = 0.0001
 # model = get_model(MODEL_NAME, input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_filters=N_FILTERS, )

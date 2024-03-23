@@ -27,6 +27,10 @@ import numpy as np
 from keras import backend as K
 from sklearn.model_selection import train_test_split
 import joblib
+from keras.callbacks import ReduceLROnPlateau
+import segmentation_models as sm
+import tensorflow_addons as tfa
+
 
 MAX_PIXEL_VALUE = 65535 # 이미지 정규화를 위한 픽셀 최대값
 
@@ -59,7 +63,7 @@ def get_img_arr(path):
     return img
 
 def get_img_762bands(path):
-    img = rasterio.open(path).read((7,6,2)).transpose((1, 2, 0))    
+    img = rasterio.open(path).read((7,6,5)).transpose((1, 2, 0))    
     img = np.float32(img)/MAX_PIXEL_VALUE
     
     return img
@@ -240,7 +244,7 @@ save_name = 'base_line'
 N_FILTERS = 16 # 필터수 지정
 N_CHANNELS = 3 # channel 지정
 EPOCHS = 200 # 훈련 epoch 지정
-BATCH_SIZE = 12 # batch size 지정
+BATCH_SIZE = 8 # batch size 지정
 IMAGE_SIZE = (256, 256) # 이미지 크기 지정
 MODEL_NAME = 'DeepLabV3Plus' # 모델 이름
 RANDOM_STATE = 42 # seed 고정  // 원래 47
@@ -303,20 +307,43 @@ masks_validation = [os.path.join(MASKS_PATH, mask) for mask in x_val['train_mask
 train_generator = generator_from_lists(images_train, masks_train, batch_size=BATCH_SIZE, random_state=RANDOM_STATE, image_mode="762")
 validation_generator = generator_from_lists(images_validation, masks_validation, batch_size=BATCH_SIZE, random_state=RANDOM_STATE, image_mode="762")
 
+#miou metric
+Threshold  = 0.5
+def miou(y_true, y_pred, smooth=1e-6):
+    # 임계치 기준으로 이진화
+    y_pred = tf.cast(y_pred > Threshold , tf.float32)
+    intersection = tf.reduce_sum(y_true * y_pred, axis=[1, 2, 3])
+    union = tf.reduce_sum(y_true, axis=[1, 2, 3]) + tf.reduce_sum(y_pred, axis=[1, 2, 3]) - intersection
+    
+    # mIoU 계산
+    iou = (intersection + smooth) / (union + smooth)
+    miou = tf.reduce_mean(iou)
+    return miou
+
 
 # model 불러오기
-learning_rate = 0.001
-model = DeepLabV3Plus(input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_channels=N_CHANNELS, n_classes=1)
-model.compile(optimizer=Adam(learning_rate=0.001), loss='binary_crossentropy', metrics=['accuracy', iou])
+# learning_rate = 0.001
+# model = DeepLabV3Plus(input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_channels=N_CHANNELS, n_classes=1)
+# model.compile(optimizer=Adam(learning_rate=0.001), loss='binary_crossentropy', metrics=['accuracy', iou])
+
+model = DeepLabV3Plus(input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_channels=N_CHANNELS)
+optimizer = Adam(learning_rate=0.001)
+model.compile(
+              optimizer=optimizer,
+            #   loss = sm.losses.binary_focal_dice_loss,
+              loss=sm.losses.bce_jaccard_loss, 
+              metrics=['accuracy', sm.metrics.iou_score, miou])
+
 
 
 # checkpoint 및 조기종료 설정
-es = EarlyStopping(monitor='iou', mode='max', verbose=1, patience=EARLY_STOP_PATIENCE, restore_best_weights=True)
-checkpoint = ModelCheckpoint(os.path.join(OUTPUT_DIR, CHECKPOINT_MODEL_NAME), monitor='iou', verbose=1,
+es = EarlyStopping(monitor='val_iou_score', mode='max', verbose=0, patience=EARLY_STOP_PATIENCE, restore_best_weights=True)
+checkpoint = ModelCheckpoint(os.path.join(OUTPUT_DIR, CHECKPOINT_MODEL_NAME), monitor='val_iou_score', verbose=1,
 save_best_only=True, mode='max', period=CHECKPOINT_PERIOD)
 
 # rlr
-# rlr = ReduceLROnPlateau(monitor='val_loss', patience=10, verbose=0, mode='auto', factor=0.5)
+rlr = ReduceLROnPlateau(monitor='val_iou_score', patience=5, factor=0.5, mode='auto', verbose=0)
+
 
 
 """&nbsp;
@@ -351,12 +378,9 @@ print("저장된 가중치 명: {}".format(model_weights_output))
 
 - 학습한 모델 불러오기
 """
-learning_rate = 0.001
-model = DeepLabV3Plus(input_height=IMAGE_SIZE[0], input_width=IMAGE_SIZE[1], n_channels=N_CHANNELS, n_classes=1)
-model.compile(optimizer = Adam(learning_rate=learning_rate), loss = 'binary_crossentropy', metrics = ['accuracy', iou])
-# model.summary()
 
-model.load_weights('D:\\_data\\dataset\\output\\model_DeepLabV3Plus_base_line_final_weights.h5')
+
+# model.load_weights('D:\\_data\\dataset\\output\\model_DeepLabV3Plus_base_line_final_weights.h5')
 
 """## 제출 Predict
 - numpy astype uint8로 지정

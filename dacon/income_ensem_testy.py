@@ -189,7 +189,7 @@ def objective(trial):
 
 
 study = optuna.create_study(direction='minimize')
-study.optimize(objective, n_trials=1000) #,timeout=600)  # 100회 시도하거나, 총 600초가 경과하면 종료
+study.optimize(objective, n_trials=50) #,timeout=600)  # 100회 시도하거나, 총 600초가 경과하면 종료
 
 print('Number of finished trials:', len(study.trials))
 print('Best trial:', study.best_trial.params)
