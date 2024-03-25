@@ -63,7 +63,7 @@ def get_img_arr(path):
     return img
 
 def get_img_762bands(path):
-    img = rasterio.open(path).read((7,6,5)).transpose((1, 2, 0))    
+    img = rasterio.open(path).read((5,6,7)).transpose((1, 2, 0))    
     img = np.float32(img)/MAX_PIXEL_VALUE
     
     return img
@@ -177,6 +177,7 @@ def conv2d_batchnorm(x, filters, kernel_size=(2, 2), activation='relu', padding=
     if activation == 'relu':
         x = Activation('relu')(x)
     return x
+
 
 def MultiResBlock(U, inp, alpha = 1.67):
     '''
@@ -352,7 +353,7 @@ EPOCHS = 150 # 훈련 epoch 지정
 BATCH_SIZE = 6 # batch size 지정
 IMAGE_SIZE = (256, 256) # 이미지 크기 지정
 MODEL_NAME = 'MultiResUNet' # 모델 이름
-RANDOM_STATE = 1113 # seed 고정 42 -> 1113
+RANDOM_STATE = 11123 # seed 고정 42 -> 1113
 INITIAL_EPOCH = 0 # 초기 epoch
 
 # 데이터 위치
@@ -360,14 +361,14 @@ IMAGES_PATH = 'D:\\_data\\dataset\\train_img\\'
 MASKS_PATH = 'D:\\_data\\dataset\\train_mask\\'
 
 # 가중치 저장 위치
-OUTPUT_DIR = 'D:\\_data\\dataset\\output\\'
+OUTPUT_DIR = 'D:\\_data\\dataset\\output\\model_checkpoints\\'
 WORKERS = 22
 
 # 조기종료
-EARLY_STOP_PATIENCE = 20
+EARLY_STOP_PATIENCE = 7
 
 # 중간 가중치 저장 이름
-CHECKPOINT_PERIOD = 5
+CHECKPOINT_PERIOD = 1
 CHECKPOINT_MODEL_NAME = 'checkpoint-{}-{}-epoch_{{epoch:02d}}.hdf5'.format(MODEL_NAME, save_name)
  
 # 최종 가중치 저장 이름
@@ -414,7 +415,7 @@ validation_generator = generator_from_lists(images_validation, masks_validation,
 
 
 #miou metric
-Threshold  = 0.25
+Threshold  = 0.2
 def miou(y_true, y_pred, smooth=1e-6):
     # 임계치 기준으로 이진화
     y_pred = tf.cast(y_pred > Threshold , tf.float32)
@@ -428,10 +429,11 @@ def miou(y_true, y_pred, smooth=1e-6):
     return miou
 
 # model 불러오기
-learning_rate = 0.001
+learning_rate = 0.01
 model = MultiResUnet(height=IMAGE_SIZE[0], width=IMAGE_SIZE[1], n_channels=N_CHANNELS,)
+# model.load_weights('D:\\_data\\dataset\\output\\model_MultiResUNet_sample_line_final_weights_0.9257781.h5')
 # optimizer = tfa.optimizers.AdamW(learning_rate=learning_rate, weight_decay=1e-4)  # 1e-4 = 0.0001
-optimizer = Adam(learning_rate=learning_rate)  # 1e-4 = 0.0001
+optimizer = Adam(learning_rate=learning_rate)
 
 model.compile(
               optimizer=optimizer,

@@ -73,7 +73,7 @@ def get_img_762bands(path):
     img = rasterio.open(path).read((7,6,10)).transpose((1, 2, 0))    
     img = np.float32(img)/MAX_PIXEL_VALUE
     
-    return img
+    return img 
     
 def get_mask_arr(path):
     img = rasterio.open(path).read().transpose((1, 2, 0))
