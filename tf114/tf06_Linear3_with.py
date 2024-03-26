@@ -24,14 +24,16 @@ train = optimizer.minimize(loss)   # 손실 함수를 최소화하는 연산
 
 #3-2. 훈련
 # 변수 초기화
-sess = tf.compat.v1.Session()
-sess.run(tf.global_variables_initializer()) # 변수 2개 초기화
+# sess = tf.compat.v1.Session()
+with tf.compat.v1.Session() as sess:
+    sess.run(tf.global_variables_initializer()) # 변수 2개 초기화
 
-#3-3 model.fit
-epochs = 4000
-for step in range(epochs):
-    sess.run(train) # 1에포
-    if step % 20 == 0:  # 20번마다 한번씩 보여주겠다 .-> verbose
-        print(step, sess.run(loss), sess.run(w), sess.run(b))   # verbose와 model.weight에서 봤떤 애들 // 특정 간격으로 현재 단계, 손실 함수의 값, 가중치 w, 편향 b의 값을 출력
-sess.close()
+    #3-3 model.fit
+    epochs = 4000
+    for step in range(epochs):
+        sess.run(train) # 1에포
+        if step % 20 == 0:  # 20번마다 한번씩 보여주겠다 .-> verbose
+            print(step, sess.run(loss), sess.run(w), sess.run(b))   # verbose와 model.weight에서 봤떤 애들 // 특정 간격으로 현재 단계, 손실 함수의 값, 가중치 w, 편향 b의 값을 출력
+    # sess.close()  # 끈다.
 # sess는 저장되어있기때문에 닫아줘야한다.
+# 
