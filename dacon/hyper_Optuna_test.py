@@ -21,16 +21,16 @@ train_csv = pd.read_csv(path + 'train.csv')
 x = train_csv.drop(['person_id', 'login', ], axis=1)    #  'Sex', 'email_type', 'apple_rat'
 y = train_csv['login']
 
-# x_train, x_test, y_train, y_test = train_test_split(x,y,train_size=0.8, random_state=RANDOM_STATE)
+x_train, x_test, y_train, y_test = train_test_split(x,y,train_size=0.8, random_state=RANDOM_STATE)
 
 def objectiveRF(trial):
     param = {
-        'n_estimators': trial.suggest_int('n_estimators', 10, 1000),  # 조정: 트리의 수를 200에서 1000 사이로 확장
+        'n_estimators': trial.suggest_int('n_estimators', 10, 200),  # 조정: 트리의 수를 200에서 1000 사이로 확장
         'criterion': trial.suggest_categorical('criterion', ['gini', 'entropy']),
-        # 'max_depth': trial.suggest_int('max_depth', 10, 100),  # 조정: 최대 깊이를 더 넓은 범위로 조정하여 더 깊은 트리 허용
-        'min_samples_split': trial.suggest_int('min_samples_split', 2, 25),  # 조정: 분할에 필요한 최소 샘플 수 범위 조정
-        'min_samples_leaf': trial.suggest_int('min_samples_leaf', 1, 15),  # 조정: 리프에 필요한 최소 샘플 수 조정
-        'min_weight_fraction_leaf': trial.suggest_float('min_weight_fraction_leaf', 0, 0.5),  # 복원: 리프의 최소 가중치 비율 조정
+        'max_depth': trial.suggest_int('max_depth', 400, 500),  # 조정: 최대 깊이를 더 넓은 범위로 조정하여 더 깊은 트리 허용
+        'min_samples_split': trial.suggest_int('min_samples_split', 2, 20),  # 25 조정: 분할에 필요한 최소 샘플 수 범위 조정
+        'min_samples_leaf': trial.suggest_int('min_samples_leaf', 1, 10),  # 15 조정: 리프에 필요한 최소 샘플 수 조정
+        # 'min_weight_fraction_leaf': trial.suggest_float('min_weight_fraction_leaf', 0, 0.5),  # 복원: 리프의 최소 가중치 비율 조정
         'max_features': trial.suggest_categorical('max_features', ['auto', 'sqrt', 'log2']),  # 조정: 최대 특성 수 결정
         # 'max_leaf_nodes': trial.suggest_int('max_leaf_nodes', 2, 2000),  # 복원 및 조정: 최대 리프 노드 수를 100에서 1000 사이로 설정
         # 'min_impurity_decrease': trial.suggest_float('min_impurity_decrease', 0.0, 0.1),  # 조정: 불순도 감소량의 최소값 조정
@@ -67,16 +67,22 @@ def objectiveRF(trial):
         x_train, x_valid = x.iloc[train_idx], x.iloc[valid_idx]
         y_train, y_valid = y.iloc[train_idx], y.iloc[valid_idx]
 
+        x_train = x_train.reset_index(drop=True)
+        x_valid = x_valid.reset_index(drop=True)
+        y_train = y_train.reset_index(drop=True)
+        y_valid = y_valid.reset_index(drop=True)
+        
         model = RandomForestClassifier(**param)
         model.fit(x_train, y_train)
         preds = model.predict_proba(x_valid)[:, 1]
         score = roc_auc_score(y_valid, preds)
         scores.append(score)
-
+        
     return np.mean(scores)
 
-study = optuna.create_study(direction='maximize', pruner=optuna.pruners.MedianPruner(n_startup_trials=50, n_warmup_steps=100, interval_steps=1)) # 50 100
-study.optimize(objectiveRF, n_trials=1000  )#, timeout=1000)
+study = optuna.create_study(direction="maximize")
+# study = optuna.create_study(direction='maximize', pruner=optuna.pruners.MedianPruner(n_startup_trials=300, n_warmup_steps=400, interval_steps=1)) # 50 100
+study.optimize(objectiveRF, n_trials=3000, timeout=1000)
 
 best_params = study.best_params
 
@@ -85,12 +91,9 @@ best_params = study.best_params
 
 model = RandomForestClassifier(**best_params, random_state=RANDOM_STATE)
 model.fit(x, y)
-preds = model.predict_proba(x)[:, 1]
-final_score = roc_auc_score(y, preds)
 
-pred_list = model.predict_proba(x)[:,1]
-auc = roc_auc_score(y,pred_list)
-print(f'Final AUC score: {final_score}')
+pred_list = model.predict_proba(x_test)[:,1]
+auc = roc_auc_score(y_test,pred_list)
 print("AUC:  ",auc)
 print(best_params)
 
@@ -106,7 +109,13 @@ import datetime
 dt = datetime.datetime.now()
 submission_csv.to_csv(path+f"submit_{dt.day}day{dt.hour:2}{dt.minute:2}_AUC_{auc:4}.csv",index=False)
 
-
+'''
+0.8219608868793369. -> AUC:   0.8673402868318123
+0.8284274885644347. -> AUC:   0.8719850065189048
+0.8230787229590769. -> AUC:   0.8845338983050847
+0.8219162673362149. -> AUC:   0.8678292046936115
+0.8283383090162777. -> AUC:   0.8719850065189048
+'''
 
 
 

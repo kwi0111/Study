@@ -18,7 +18,7 @@ np.random.seed(RANDOM_STATE)
 path = 'C:\\_data\\dacon\\hyper\\'
 train_csv = pd.read_csv(path + 'train.csv')
 
-x = train_csv.drop(['person_id', 'login', 'Sex', 'email_type', 'apple_rat'], axis=1)
+x = train_csv.drop('login', axis=1)
 y = train_csv['login']
 
 # x_train, x_test, y_train, y_test = train_test_split(x,y,train_size=0.8, random_state=RANDOM_STATE)
@@ -57,7 +57,7 @@ def objectiveRF(trial):
     return np.mean(scores)
 
 study = optuna.create_study(direction='maximize', pruner=optuna.pruners.MedianPruner(n_startup_trials=80, n_warmup_steps=200, interval_steps=1))
-study.optimize(objectiveRF, n_trials=15000, timeout=25000)
+study.optimize(objectiveRF, n_trials=500, timeout=600)
 
 best_params = study.best_params
 
@@ -88,14 +88,6 @@ dt = datetime.datetime.now()
 submission_csv.to_csv(path+f"submit_{dt.day}day{dt.hour:2}{dt.minute:2}_AUC_{auc:4}.csv",index=False)
 
 '''
-Feature 0 (Sex): 0.0187113169480082
-Feature 1 (past_login_total): 0.15659441262899576
-Feature 2 (past_1_month_login): 0.40874237416118
-Feature 3 (past_1_week_login): 0.26601999712420626
-Feature 4 (sub_size): 0.06180898228593933
-Feature 5 (email_type): 0.02256050583405757
-Feature 6 (phone_rat): 0.044797342153462386
-Feature 7 (apple_rat): 0.020765068864150492
 
 
 '''

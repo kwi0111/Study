@@ -113,7 +113,7 @@ model = BayesSearchCV(
     search_spaces=param_space,
     n_iter=100,
     cv=kfold,
-    scoring='roc_auc',
+    scoring='neg_mean_squared_error',
     n_jobs=-1,
     verbose=0,
     refit=True
@@ -166,71 +166,3 @@ submission_csv.to_csv(path+f"submit_{dt.day}day{dt.hour:2}{dt.minute:2}_acc_{bes
 
 print('AUC on training data:', train_auc)
 
-'''
-#   n_estimators criterion  max_depth  min_samples_split  min_samples_leaf  min_weight_fraction_leaf max_features max_leaf_nodes  min_impurity_decrease  bootstrap
-# 0           100      gini          6                  2                 5                         0         auto           None                      0       True
-
-#    n_estimators criterion  max_depth  min_samples_split  min_samples_leaf  min_weight_fraction_leaf max_features max_leaf_nodes  min_impurity_decrease  bootstrap
-# 0           200   entropy         12                  2                10                         0         auto           None                      0       True
-
-#    n_estimators criterion  max_depth  min_samples_split  min_samples_leaf  min_weight_fraction_leaf max_features max_leaf_nodes  min_impurity_decrease  bootstrap
-# 0           100      gini          6                  2                 5                         0         auto           None                      0       True
-
-
-   n_estimators criterion  max_depth  min_samples_split  min_samples_leaf  min_weight_fraction_leaf max_features  max_leaf_nodes  min_impurity_decrease  bootstrap
-0           200      gini          8                  2                 3                         0         None              10                    0.0       True
-
-  n_estimators criterion  max_depth  min_samples_split  min_samples_leaf  min_weight_fraction_leaf max_features  max_leaf_nodes  min_impurity_decrease  bootstrap
-0           100      gini          6                  2                 1                         0         sqrt              10                      0       True
-
-   n_estimators criterion  max_depth  min_samples_split  min_samples_leaf  min_weight_fraction_leaf max_features  max_leaf_nodes  min_impurity_decrease  bootstrap
-0           100      gini         10                 10                 1                         0         sqrt              10                      0       True
-
-   n_estimators criterion  max_depth  min_samples_split  min_samples_leaf  min_weight_fraction_leaf max_features  max_leaf_nodes  min_impurity_decrease  bootstrap
-0           100   entropy          6                 10                 1                         0         sqrt              10                      0      False
-
-스텐다드
-   n_estimators criterion  max_depth  min_samples_split  min_samples_leaf  min_weight_fraction_leaf max_features  max_leaf_nodes  min_impurity_decrease  bootstrap
-0           150      gini          8                  2                 3                         0         auto              10                      0       True
-BayesSearchCV 사용
-최적튠 ACC : 0.9243697478991597
-걸린시간 : 42.59 초
-   n_estimators criterion  max_depth  min_samples_split  min_samples_leaf  min_weight_fraction_leaf max_features  max_leaf_nodes  min_impurity_decrease  bootstrap
-0           150      gini          8                  2                 1                       0.0         auto              10                    0.0       True
-
-최적튠 ACC : 0.9152024446142093
-걸린시간 : 58.89 초
-   n_estimators criterion  max_depth  min_samples_split  min_samples_leaf  min_weight_fraction_leaf max_features  max_leaf_nodes  min_impurity_decrease  bootstrap
-0           776      gini         59                 70                31                         0         None              88                      0       True
-
-걸린시간 : 170.98 초
-   n_estimators criterion  max_depth  min_samples_split  min_samples_leaf  min_weight_fraction_leaf max_features  max_leaf_nodes  min_impurity_decrease  bootstrap
-0          1000      gini         50                 20                10                  0.036766         log2              10                    0.0       True
-AUC on training data: 0.8492355622563281
-
-걸린시간 : 224.56 초
-   n_estimators criterion  max_depth  min_samples_split  min_samples_leaf  min_weight_fraction_leaf max_features  max_leaf_nodes  min_impurity_decrease  bootstrap
-0          1500      gini         10                  5                20                       0.0         auto              20                    0.0       True
-AUC on training data: 0.8558964180967974
-
-걸린시간 : 168.6 초
-   n_estimators criterion  max_depth  min_samples_split  min_samples_leaf  min_weight_fraction_leaf max_features  max_leaf_nodes  min_impurity_decrease  bootstrap
-0           200      gini        100                  2                20                       0.0         auto             200                    0.0       True
-AUC on training data: 0.8558493032897915
-
-   n_estimators criterion  max_depth  min_samples_split  min_samples_leaf  min_weight_fraction_leaf max_features  max_leaf_nodes  min_impurity_decrease  bootstrap
-0          2000      gini         35                  3                 1                  0.043068         None              10                    0.0       True
-AUC on training data: 0.8596420452537721
-
-est Hyperparameters: {'bootstrap': 0, 'criterion': 0, 'max_depth': 127, 'max_features': 1, 'max_leaf_nodes': 322, 'min_impurity_decrease': 0.00028827455993945877, 'min_samples_leaf': 30, 'min_samples_split': 29, 'min_weight_fraction_leaf': 0.03650323306039522, 'n_estimators': 923}
-Best AUC: 0.8080262975475412
-
-   n_estimators  criterion  max_depth  min_samples_split  min_samples_leaf  min_weight_fraction_leaf  max_features  max_leaf_nodes  min_impurity_decrease  bootstrap
-0         874.0          0      171.0               12.0               6.0                  0.295092             1           374.0               0.071247          0
-
-{'n_estimators': 1371, 'criterion': 'gini', 'bootstrap': True, 'max_depth': 222, 'min_samples_split': 8, 'min_samples_leaf': 3, 'max_features': 'log2', 'max_leaf_nodes': 496, 'min_impurity_decrease': 0.00047994305574976335, 'min_weight_fraction_leaf': 0.022486087636199574}
-score:  0.919022154316272
-AUC:   0.8375864262241015
-
-
-'''

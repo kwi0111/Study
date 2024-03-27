@@ -22,9 +22,9 @@ def objectiveRF(trial):
     params = {
         'n_estimators': trial.suggest_int('n_estimators', 10, 1000),  # 조정: 트리의 수를 200에서 1000 사이로 확장
         'criterion': trial.suggest_categorical('criterion', ['gini', 'entropy']),
-        'max_depth': trial.suggest_int('max_depth', 10, 100),  # 조정: 최대 깊이를 더 넓은 범위로 조정하여 더 깊은 트리 허용
-        'min_samples_split': trial.suggest_int('min_samples_split', 2, 25),  # 조정: 분할에 필요한 최소 샘플 수 범위 조정
-        # 'min_samples_leaf': trial.suggest_int('min_samples_leaf', 1, 15),  # 조정: 리프에 필요한 최소 샘플 수 조정
+        # 'max_depth': trial.suggest_int('max_depth', 10, 100),  # 조정: 최대 깊이를 더 넓은 범위로 조정하여 더 깊은 트리 허용
+        'min_samples_split': trial.suggest_int('min_samples_split', 2, 10),  # 조정: 분할에 필요한 최소 샘플 수 범위 조정
+        'min_samples_leaf': trial.suggest_int('min_samples_leaf', 1, 5),  # 조정: 리프에 필요한 최소 샘플 수 조정
         # 'min_weight_fraction_leaf': trial.suggest_float('min_weight_fraction_leaf', 0, 0.5),  # 복원: 리프의 최소 가중치 비율 조정
         'max_features': trial.suggest_categorical('max_features', ['auto', 'sqrt', 'log2']),  # 조정: 최대 특성 수 결정
         # 'max_leaf_nodes': trial.suggest_int('max_leaf_nodes', 2, 2000),  # 복원 및 조정: 최대 리프 노드 수를 100에서 1000 사이로 설정
@@ -46,8 +46,8 @@ def objectiveRF(trial):
     return np.mean(cv_scores)
 
 study = optuna.create_study(direction="maximize")
-# study = optuna.create_study(direction='maximize', pruner=optuna.pruners.MedianPruner(n_startup_trials=100, n_warmup_steps=200, interval_steps=1))
-study.optimize(objectiveRF, n_trials=1500)
+# study = optuna.create_study(direction='maximize', pruner=optuna.pruners.MedianPruner())
+study.optimize(objectiveRF, n_trials=3000, timeout=3000)
 best_params = study.best_trial.params
 
 print(best_params)
@@ -57,18 +57,18 @@ predictions = model.predict_proba(X_test)[:, 1]
 score = roc_auc_score(y_test, predictions)
 print("ROC AUC score : ", score)
 
-param_order = [
-    'n_estimators',
-    'criterion',
-    'max_depth',
-    'min_samples_split',
-    'min_samples_leaf',
-    'min_weight_fraction_leaf',
-    'max_features',
-    'max_leaf_nodes',
-    'min_impurity_decrease',
-    'bootstrap',
-]
+# param_order = [
+#     'n_estimators',
+#     'criterion',
+#     'max_depth',
+#     'min_samples_split',
+#     'min_samples_leaf',
+#     'min_weight_fraction_leaf',
+#     'max_features',
+#     'max_leaf_nodes',
+#     'min_impurity_decrease',
+#     'bootstrap',
+# ]
 # best_params_ordered = OrderedDict({k: best_params.get(k, None) for k in param_order})
 # best_params_ordered['max_depth'] = 100  
 # best_params_ordered['min_weight_fraction_leaf'] = 0.0
@@ -84,10 +84,7 @@ for label in submission_csv:
         submission_csv[label] = best_params[label]
 submission_csv.to_csv(path+f"submit_{dt.day}day{dt.hour:2}{dt.minute:2}_SCORE_{score:4}.csv",index=False)
 '''
-0.7829359513791492
-ROC AUC score :  0.8586650880568298
-0.8070350241545894.
-ROC AUC score :  0.8489714370282669
-
+0.809924809100826. -> ROC AUC score :  0.8507473730945687
+0.8095118435405952. -> ROC AUC score :  0.8587390853929259
 
 '''

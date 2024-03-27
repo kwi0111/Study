@@ -31,7 +31,7 @@ hypothesis = x * w + b  # predict 예측값.
 
 #3. 컴파일, 훈련
 loss = tf.reduce_mean(tf.square(hypothesis - y))    # MSE
-optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.04)   # 그냥 경사하강법 // 로스 최소화
+optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.0823)   # 그냥 경사하강법 // 로스 최소화
 train = optimizer.minimize(loss)   # 손실 함수를 최소화하는 연산
 
 # model.compile(loss='mse', optimizer ='sgd')
