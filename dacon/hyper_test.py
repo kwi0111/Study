@@ -1,4 +1,4 @@
-from sklearn.model_selection import train_test_split, KFold, StratifiedKFold, RepeatedStratifiedKFold, GroupKFold 
+from sklearn.model_selection import train_test_split, KFold, StratifiedKFold, RepeatedStratifiedKFold, GroupKFold, GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import auc
 import tensorflow as tf
@@ -39,85 +39,49 @@ print(train_csv)
 x = train_csv.drop('login', axis=1)
 y = train_csv['login']
 
-x_train, x_test, y_train, y_test = train_test_split(x, y, shuffle= True, random_state= RANDOM_STATE, train_size=0.75, stratify=y)
+x_train, x_test, y_train, y_test = train_test_split(x, y, shuffle= True, random_state= RANDOM_STATE, train_size=0.8, stratify=y)
 
 # scaler = StandardScaler()
 # x = scaler.fit_transform(x)
 # x_test = scaler.transform(x_test)
 
 
-n_splits=5
+n_splits=3
 kfold = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=RANDOM_STATE)
-# GridSearchCV를 위한 하이퍼파라미터 설정
-# param_grid = {
-#     "n_estimators": [150, 200, 250],     # 범위: 10 ~ 1000 사이의 양의 정수. 일반적으로 값이 클수록 모델 성능이 좋아지지만, 계산 비용과 시간도 증가합니다.
-#     "criterion": ['gini', 'entropy'],   # 옵션: 'gini', 'entropy'. 'gini'는 진니 불순도를, 'entropy'는 정보 이득을 기준으로 합니다.
-#     "max_depth": [6, 8, 10, None],         # 범위: None 또는 양의 정수. None으로 설정하면 노드가 모든 리프가 순수해질 때까지 확장됩니다. 양의 정수를 설정하면 트리의 최대 깊이를 제한합니다.
-#     "min_samples_split": [2, 5, 10],    # 범위: 2 이상의 정수 또는 0과 1 사이의 실수 (비율을 나타냄, (0, 1] ). 내부 노드를 분할하기 위해 필요한 최소 샘플 수를 지정합니다.
-#     "min_samples_leaf": [1, 3, 8],      # 범위: 1 이상의 정수 또는 0과 0.5 사이의 실수 (비율을 나타냄, (0, 0.5] ). 리프 노드가 가져야 하는 최소 샘플 수를 지정합니다.
-#     "min_weight_fraction_leaf": [0, 0.2],   # 범위: 0.0에서 0.5 사이의 실수. 리프 노드에 있어야 하는 샘플의 최소 가중치 비율을 지정합니다.
-#     "max_features": ['auto'],       # 옵션: 'auto', 'sqrt', 'log2', None 또는 양의 정수/실수. 최적의 분할을 찾기 위해 고려할 특성의 수 또는 비율을 지정합니다.
-#     "max_leaf_nodes": [None, 10],   # 범위: None 또는 양의 정수. 리프 노드의 최대 수를 제한합니다. None은 무제한을 의미합니다.
-#     "min_impurity_decrease": [0, 0.1],  # 범위: 0.0 이상의 실수. 노드를 분할할 때 감소해야 하는 불순도의 최소량을 지정합니다.
-#     "bootstrap": [True, False]  # 옵션: True, False. True는 부트스트랩 샘플을 사용하여 개별 트리를 학습시킵니다. False는 전체 데이터셋을 사용하여 각 트리를 학습시킵니다
-# }
-# param_grid = {
-#     "n_estimators": [150, 200, 250],     # 최적 값: 200
-#     "criterion": ['gini', 'entropy'],   # 최적 값: 'entropy'
-#     "max_depth": [6, 8, 10, None],         # 최적 값: None
-#     "min_samples_split": [2, 5, 10],    # 최적 값: 2
-#     "min_samples_leaf": [1, 3, 8],      # 최적 값: 1
-#     "min_weight_fraction_leaf": [0, 0.2],   # 최적 값: 0
-#     "max_features": ['auto'],       # 최적 값: 'auto'
-#     "max_leaf_nodes": [None, 10],   # 최적 값: None
-#     "min_impurity_decrease": [0, 0.1],  # 최적 값: 0
-#     "bootstrap": [True, False]  # 최적 값: True
-# }
+
 from skopt import BayesSearchCV
 # Bayesian Optimization을 위한 파라미터 공간 정의
-param_space = {
-    "n_estimators": (10, 200),          # 최적 값: 200
-    "criterion": ['gini'],    # 최적 값: 'entropy'
-    "max_depth": (6, 10),                 # 최적 값: None
-    "min_samples_split": (2, 10),         # 최적 값: 2
-    "min_samples_leaf": (1, 10),           # 최적 값: 1
-    "min_weight_fraction_leaf": (0, 0.2), # 최적 값: 0
-    "max_features": ['auto', 'sqrt', 'log2', None],             # 최적 값: 'auto'
-    # "max_leaf_nodes": (2, 20),         # 최적 값: None
-    "min_impurity_decrease": (0, 0.1),    # 최적 값: 0
-    "bootstrap": [True]            # 최적 값: True
-}
 
-# param_space = {
-#     "n_estimators": (100, 1500),          # 트리의 개수 범위를 100에서 1500 사이로 변경
-#     "max_depth": (5, 200),               # 트리의 최대 깊이 범위를 5에서 200 사이로 변경
-#     "min_samples_split": (2, 100),       # 노드를 분할하기 위한 최소 샘플 수 범위를 2에서 100 사이로 변경
-#     "min_samples_leaf": (1, 50),         # 리프 노드가 가져야 하는 최소 샘플 수 범위를 1에서 50 사이로 변경
-#     "max_features": ['auto', 'sqrt', 'log2', None],  # None을 포함한 다양한 옵션 유지
-#     "max_leaf_nodes": (10, 500),         # 리프 노드의 최대 수 범위를 10에서 500 사이로 변경
-#     "bootstrap": [True],
-#     "min_impurity_decrease": (0, 0.2),   # 불순도 감소 범위를 0에서 0.2로 변경
-#     "min_weight_fraction_leaf": (0, 0.5), # 최소 가중치 비율 범위를 0에서 0.5로 변경
-#     "criterion": ['gini'],
-# }
+param_grid = {
+    'n_estimators': list(range(10, 101, 1)),  # 10부터 1000까지 50 단위로
+    'max_depth': [None] + list(range(1, 16, 5)),  # None 포함, 6부터 25까지 5 단위로
+    'min_samples_split': [2, 5],  # 분할을 위한 최소 샘플 수
+    'min_samples_leaf': [1, 2, 4],  # 리프 노드가 가져야 하는 최소 샘플 수
+    'max_features': ['auto', 'sqrt', 'log2'],  # 최대 피처 개수
+    'min_weight_fraction_leaf': [0.0, 0.1, 0.2],  # 리프 노드에 있어야 하는 가중치의 최소 합
+    'max_leaf_nodes': [None] + list(range(5, 21, 5)),  # 최대 리프 노드 수
+    'min_impurity_decrease': [0.0, 0.01, 0.05, 0.1],   # 노드를 분할하기 위한 불순도 감소량 최소값
+    # 'criterion': ['gini'],
+    # "bootstrap": [True],
+}
 
 # RandomForestClassifier 객체 생성
 rf = RandomForestClassifier(random_state=42)
 
 # GridSearchCV 객체 생성
-# model = GridSearchCV(estimator=rf, param_grid=param_grid, cv=kfold, n_jobs=-1, verbose=0, scoring='roc_auc', refit=True)
+model = GridSearchCV(estimator=rf, param_grid=param_grid, cv=kfold, n_jobs=-1, verbose=1, scoring='roc_auc', refit=True)
 
-# BayesSearchCV 객체 생성
-model = BayesSearchCV(
-    estimator=rf,
-    search_spaces=param_space,
-    n_iter=100,
-    cv=kfold,
-    scoring='roc_auc',
-    n_jobs=-1,
-    verbose=1,
-    refit=True
-)
+# # BayesSearchCV 객체 생성
+# model = BayesSearchCV(
+#     estimator=rf,
+#     search_spaces=param_space,
+#     n_iter=100,
+#     cv=kfold,
+#     scoring='roc_auc',
+#     n_jobs=-1,
+#     verbose=1,
+#     refit=True
+# )
 
 
 # GridSearchCV를 사용한 학습

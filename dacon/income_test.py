@@ -120,30 +120,20 @@ model = BayesSearchCV(
 #3
 model.fit(x_train, y_train) 
 
-#4
-results = model.score(x_test, y_test)
+y_submit = model.predict(test_csv)
+submission_csv['Income'] = y_submit
+
+
+r2 = model.score(x_test,y_test)
+pred = model.predict(x_test)
+rmse = np.sqrt(mean_squared_error(pred,y_test))
 y_predict = model.predict(x_test)
-best_y_predict = model.best_estimator_.predict(x_test)
-# mse
-mse = mean_squared_error(y_test, y_predict)
-best_mse = mean_squared_error(y_test, best_y_predict)
-# rmse
-rmse = np.sqrt(mse)
-best_rmse = np.sqrt(best_mse)
-# submission
-preds = model.predict(test_x)
-best_pred = model.best_estimator_.predict(test_x)
+score = r2_score(y_test, y_predict)
 
-# submission = pd.read_csv('C:\\_data\\dacon\\income\\sample_submission.csv')
-submission = submission.head(len(preds))
-submission['Income'] = preds
-# print(submission)
-
-# submission.to_csv('C:\\_data\\dacon\\income\\submission_0314_1.csv', index=False)
+import datetime
 dt = datetime.datetime.now()
-submission.to_csv(path+f"submit_{dt.day}day{dt.hour:2}{dt.minute:2}_rmse_{best_rmse:4}.csv",index=False)
-
-
-print("최적의 매개변수 : ", model.best_estimator_)
-print("최적의 파라미터 : ", model.best_params_) 
-print('best_rmse : ', best_rmse)
+y_submit = model.predict(test_csv)
+submission_csv['Income'] = y_submit
+submission_csv.to_csv(path+f'submit_{dt.day}day{dt.hour:2}{dt.minute:2}_rmse_{rmse:4f}.csv',index=False)
+print("R2:   ",r2)
+print("RMSE: ",rmse)

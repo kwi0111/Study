@@ -151,9 +151,7 @@ y_pred_best = model.best_estimator_.predict(x)
 print("accuracy_score :", accuracy_score(y, y_predict))
 print("걸린시간 :", round(end_time - start_time, 2), "초")
 
-submission_csv.fillna(value="None", inplace=True)
-# 데이터 프레임에서 'max_features' 열이 빈 문자열인 경우 값을 'None'으로 설정
-submission_csv.loc[submission_csv['max_features'] == '', 'max_features'] = 'None'
+
 # 찾은 최적의 파라미터들을 제출 양식에 맞게 제출
 for param, value in best_params.items():
     if param in submission_csv.columns:

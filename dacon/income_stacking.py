@@ -113,28 +113,46 @@ x_train, x_test, y_train, y_test = train_test_split(x, y, train_size= 0.8,  shuf
 #3. 훈련
 
 xgb_params = {
-    'n_estimators': 2000,  # 조금 증가
-    'max_depth': 9,  # 깊이 증가
+    'n_estimators': 2000,
+    'max_depth': 9,
     'min_child_weight': 10,
-    'gamma': 2.5,  # 소폭 조정
-    'learning_rate': 0.005,  # 학습률 증가
-    'colsample_bytree': 0.45,  # 소폭 증가
-    'lambda': 3,  # 레귤러리제이션 조정
-    'alpha': 1,  # 레귤러리제이션 조정
-    'subsample': 0.7  # 소폭 증가
+    'gamma': 2.5,
+    'learning_rate': 0.005,
+    'colsample_bytree': 0.45,
+    'lambda': 3,
+    'alpha': 1,
+    'subsample': 0.7,
+    'scale_pos_weight': 1,  # 데이터가 불균형할 경우 조정
 }
 
+# LightGBM 파라미터
 lgbm_params = {
-    'n_estimators': 800,  # 조금 증가
-    'max_depth': 13,  # 깊이 증가
+    'n_estimators': 1000,
+    'max_depth': 13,
     'min_child_weight': 3,
-    'gamma': 0.07,  # 소폭 조정
-    'learning_rate': 0.007,  # 학습률 증가
-    'colsample_bytree': 0.55,  # 소폭 증가
-    'lambda': 1,  # 레귤러리제이션 조정
-    'alpha': 5,  # 레귤러리제이션 증가
-    'subsample': 0.85  # 유지
+    'gamma': 0.07,
+    'learning_rate': 0.007,
+    'colsample_bytree': 0.55,
+    'lambda': 1,
+    'alpha': 5,
+    'subsample': 0.85,
+    'boosting_type': 'gbdt',
+    'num_leaves': 31,
+    'bagging_fraction': 0.8,
+    'feature_fraction': 0.8,
+    'bagging_freq': 5
 }
+
+# RandomForest 파라미터
+# rf_params = {
+#     'n_estimators': 1000,
+#     'max_depth': None,
+#     'min_samples_split': 2,
+#     'min_samples_leaf': 1,
+#     'max_features': 'auto',
+#     'bootstrap': True,
+#     'criterion': 'mse'
+# }
 
 
 xgb = XGBRegressor(**xgb_params)
@@ -142,17 +160,24 @@ lgb = LGBMRegressor(**lgbm_params)
 rf = RandomForestRegressor()
 # gbr = GradientBoostingRegressor()
 
-model = VotingRegressor(
-     estimators=[
-                ('LGBM',lgb),
-                  ('RF',rf),
-                 ('XGB',xgb),
-                #  ('GBR', gbr)
-                 ],
-     
-    # final_estimator=CatBoostRegressor(verbose=1),
-    n_jobs= -1,
-    # cv=8, 
+model = StackingRegressor(
+    estimators=[
+        ('LGBM', lgb),
+        # ('RF', rf),
+        ('XGB', xgb)
+    ],
+    final_estimator=CatBoostRegressor(
+        iterations=1000,
+        learning_rate=0.1,
+        depth=6,
+        l2_leaf_reg=3,
+        loss_function='RMSE',
+        eval_metric='RMSE',
+        random_seed=42,
+        verbose=1
+    ),
+    n_jobs=-1,
+    cv=5,
     verbose=1
 )
                     
