@@ -54,16 +54,29 @@ from skopt import BayesSearchCV
 
 param_grid = {
     'n_estimators': list(range(10, 101, 1)),  # 10부터 1000까지 50 단위로
-    'max_depth': [None] + list(range(1, 16, 5)),  # None 포함, 6부터 25까지 5 단위로
-    'min_samples_split': [2, 5],  # 분할을 위한 최소 샘플 수
-    'min_samples_leaf': [1, 2, 4],  # 리프 노드가 가져야 하는 최소 샘플 수
+    'max_depth': list(range(2, 6, 1)),  # None 포함, 6부터 25까지 5 단위로
+    'min_samples_split': list(range(1, 5, 1)),  # 분할을 위한 최소 샘플 수
+    'min_samples_leaf': list(range(1, 8, 1)),  # 리프 노드가 가져야 하는 최소 샘플 수
     'max_features': ['auto', 'sqrt', 'log2'],  # 최대 피처 개수
     'min_weight_fraction_leaf': [0.0, 0.1, 0.2],  # 리프 노드에 있어야 하는 가중치의 최소 합
-    'max_leaf_nodes': [None] + list(range(5, 21, 5)),  # 최대 리프 노드 수
-    'min_impurity_decrease': [0.0, 0.01, 0.05, 0.1],   # 노드를 분할하기 위한 불순도 감소량 최소값
+    'max_leaf_nodes': list(range(5, 10, 1)),  # 최대 리프 노드 수
+    # 'min_impurity_decrease': [0.0, 0.01, 0.05, 0.1],   # 노드를 분할하기 위한 불순도 감소량 최소값
     # 'criterion': ['gini'],
     # "bootstrap": [True],
 }
+'''
+[1309 rows x 10 columns]
+Fitting 3 folds for each of 3276 candidates, totalling 9828 fits
+최적의 매개변수:  RandomForestClassifier(max_depth=6, n_estimators=52, random_state=42)
+최적의 파라미터:  {'max_depth': 6, 'max_features': 'auto', 'min_samples_leaf': 1, 'n_estimators': 52}
+최고 교차 검증 점수:  0.8336917562724016
+테스트 데이터 정확도:  0.916030534351145
+테스트 데이터 AUC:  0.8583690987124464
+걸린 시간:  36.06 초
+
+'''
+
+
 
 # RandomForestClassifier 객체 생성
 rf = RandomForestClassifier(random_state=42)

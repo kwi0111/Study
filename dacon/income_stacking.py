@@ -114,7 +114,7 @@ x_train, x_test, y_train, y_test = train_test_split(x, y, train_size= 0.8,  shuf
 
 xgb_params = {
     'n_estimators': 2000,
-    'max_depth': 9,
+    'max_depth': 5,
     'min_child_weight': 10,
     'gamma': 2.5,
     'learning_rate': 0.005,
@@ -128,8 +128,8 @@ xgb_params = {
 # LightGBM 파라미터
 lgbm_params = {
     'n_estimators': 1000,
-    'max_depth': 13,
-    'min_child_weight': 3,
+    'max_depth': 6,
+    'min_child_weight': 5,
     'gamma': 0.07,
     'learning_rate': 0.007,
     'colsample_bytree': 0.55,
@@ -144,15 +144,15 @@ lgbm_params = {
 }
 
 # RandomForest 파라미터
-# rf_params = {
-#     'n_estimators': 1000,
-#     'max_depth': None,
-#     'min_samples_split': 2,
-#     'min_samples_leaf': 1,
-#     'max_features': 'auto',
-#     'bootstrap': True,
-#     'criterion': 'mse'
-# }
+rf_params = {
+    'n_estimators': 1000,
+    'max_depth': None,
+    'min_samples_split': 2,
+    'min_samples_leaf': 1,
+    'max_features': 'auto',
+    'bootstrap': True,
+    'criterion': 'mse'
+}
 
 
 xgb = XGBRegressor(**xgb_params)
@@ -163,7 +163,7 @@ rf = RandomForestRegressor()
 model = StackingRegressor(
     estimators=[
         ('LGBM', lgb),
-        # ('RF', rf),
+        ('RF', rf),
         ('XGB', xgb)
     ],
     final_estimator=CatBoostRegressor(

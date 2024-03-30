@@ -39,7 +39,7 @@ print(train_csv)
 x = train_csv.drop(['person_id', 'login'], axis=1)
 y = train_csv['login']
 
-# x_train, x_test, y_train, y_test = train_test_split(x, y, shuffle= True, random_state= 42, train_size=0.75, stratify=y)
+x_train, x_test, y_train, y_test = train_test_split(x, y, shuffle= True, random_state= 42, train_size=0.8, stratify=y)
 
 # scaler = StandardScaler()
 # x = scaler.fit_transform(x)
