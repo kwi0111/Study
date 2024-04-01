@@ -22,7 +22,6 @@ path = 'C:\\_data\\dacon\\hyper\\'
 train_csv = pd.read_csv(path + 'train.csv')
 submission_csv = pd.read_csv(path + "sample_submission.csv") 
 print(train_csv)
-# 데이터 전처리 과정이 끝난 학습 데이터 (추가 데이터 전처리 과정을 진행하지 않습니다.)
 # RF 모델 하이퍼파라미터를 제출 시, 해당 데이터로 자동적으로 학습됩니다.
 # person_id: 유저별 고유 아이디
 # Sex: 성별
