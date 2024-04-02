@@ -30,11 +30,11 @@ def objectiveRF(trial):
         'max_depth': trial.suggest_int('max_depth', 10, 100),  # 조정: 최대 깊이를 더 넓은 범위로 조정하여 더 깊은 트리 허용
         'min_samples_split': trial.suggest_int('min_samples_split', 2, 20),  # 조정: 분할에 필요한 최소 샘플 수 범위 조정
         'min_samples_leaf': trial.suggest_int('min_samples_leaf', 1, 10),  # 조정: 리프에 필요한 최소 샘플 수 조정
-        # 'min_weight_fraction_leaf': trial.suggest_float('min_weight_fraction_leaf', 0, 0.05),  # 복원: 리프의 최소 가중치 비율 조정
+        'min_weight_fraction_leaf': trial.suggest_float('min_weight_fraction_leaf', 0, 0.05),  # 복원: 리프의 최소 가중치 비율 조정
         'max_features': trial.suggest_categorical('max_features', ['auto', 'sqrt', 'log2']),  # 조정: 최대 특성 수 결정
         'max_leaf_nodes': trial.suggest_int('max_leaf_nodes', 100, 2000),  # 복원 및 조정: 최대 리프 노드 수를 100에서 1000 사이로 설정
-        # 'min_impurity_decrease': trial.suggest_float('min_impurity_decrease', 0.0, 0.1),  # 조정: 불순도 감소량의 최소값 조정
-        # 'bootstrap': trial.suggest_categorical('bootstrap', [True, False]),  # 조정: 부트스트랩 샘플링을 사용할지 여부
+        'min_impurity_decrease': trial.suggest_float('min_impurity_decrease', 0.0, 0.1),  # 조정: 불순도 감소량의 최소값 조정
+        'bootstrap': trial.suggest_categorical('bootstrap', [True, False]),  # 조정: 부트스트랩 샘플링을 사용할지 여부
         'random_state': RANDOM_STATE
     }
 
@@ -42,7 +42,7 @@ def objectiveRF(trial):
 # 110,gini,409,11,9,0.0003708462079350574,auto,398,5.396924281913153e-06,True // 
 
     # 여기는 이전과 동일
-    skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
+    skf = StratifiedKFold(n_splits=7, shuffle=True, random_state=RANDOM_STATE)
     scores = []
     for train_idx, valid_idx in skf.split(x, y):
         x_train, x_valid = x.iloc[train_idx], x.iloc[valid_idx]
@@ -57,12 +57,12 @@ def objectiveRF(trial):
     return np.mean(scores)
 
 study = optuna.create_study(direction='maximize', pruner=optuna.pruners.MedianPruner(n_startup_trials=80, n_warmup_steps=200, interval_steps=1))
-study.optimize(objectiveRF, n_trials=500, timeout=600)
+study.optimize(objectiveRF, n_trials=8000, timeout=10000)
 
 best_params = study.best_params
 
-optuna.visualization.plot_param_importances(study)      # 파라미터 중요도 확인 그래프
-optuna.visualization.plot_optimization_history(study)   # 최적화 과정 시각화
+# optuna.visualization.plot_param_importances(study)      # 파라미터 중요도 확인 그래프
+# optuna.visualization.plot_optimization_history(study)   # 최적화 과정 시각화
 
 model = RandomForestClassifier(**best_params, random_state=RANDOM_STATE)
 model.fit(x, y)
