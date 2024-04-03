@@ -33,6 +33,8 @@ x_train, x_test, y_train, y_test = train_test_split(
     x,y, train_size=0.8, shuffle=True, random_state=222,
 )
 
+
+
 xp = tf.compat.v1.placeholder(tf.float64, shape=[None,9])
 yp = tf.compat.v1.placeholder(tf.float64, shape=[None,1])
 
