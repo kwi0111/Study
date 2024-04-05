@@ -85,7 +85,7 @@ for step in range(training_epochs):
        
    
 #4. 평가, 예측
-print("=============================")
+print("=======================")
 y_predict = sess.run(hypothesis, feed_dict={x:x_test, rate:0.1})
 y_predict_arg = sess.run(tf.arg_max(y_predict, 1))
 y_test = np.argmax(y_test, 1)
