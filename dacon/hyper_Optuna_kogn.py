@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.model_selection import train_test_split, StratifiedKFold, KFold
 from sklearn.metrics import accuracy_score, roc_auc_score 
 import optuna
 from collections import OrderedDict
@@ -20,20 +20,20 @@ X, X_test, y, y_test = train_test_split(X, y, test_size=0.2, stratify=y, shuffle
 #def : 8595
 def objectiveRF(trial):
     params = {
-        'n_estimators': trial.suggest_int('n_estimators', 10, 100),  # 조정: 트리의 수를 200에서 1000 사이로 확장
+        'n_estimators': trial.suggest_int('n_estimators', 10, 50),  # 조정: 트리의 수를 200에서 1000 사이로 확장
         'criterion': trial.suggest_categorical('criterion', ['gini', 'entropy']),
-        'max_depth': trial.suggest_int('max_depth', 10, 50),  # 조정: 최대 깊이를 더 넓은 범위로 조정하여 더 깊은 트리 허용
+        'max_depth': trial.suggest_int('max_depth',3, 25),  # 조정: 최대 깊이를 더 넓은 범위로 조정하여 더 깊은 트리 허용
         'min_samples_split': trial.suggest_int('min_samples_split', 2, 10),  # 조정: 분할에 필요한 최소 샘플 수 범위 조정
-        'min_samples_leaf': trial.suggest_int('min_samples_leaf', 1, 10),  # 조정: 리프에 필요한 최소 샘플 수 조정
-        'min_weight_fraction_leaf': trial.suggest_float('min_weight_fraction_leaf', 0, 0.4),  # 복원: 리프의 최소 가중치 비율 조정
+        'min_samples_leaf': trial.suggest_int('min_samples_leaf', 1, 13),  # 조정: 리프에 필요한 최소 샘플 수 조정
+        'min_weight_fraction_leaf': trial.suggest_float('min_weight_fraction_leaf', 0, 0.3),  # 복원: 리프의 최소 가중치 비율 조정
         'max_features': trial.suggest_categorical('max_features', ['auto', 'sqrt', 'log2']),  # 조정: 최대 특성 수 결정
-        'max_leaf_nodes': trial.suggest_int('max_leaf_nodes', 2, 1500),  # 복원 및 조정: 최대 리프 노드 수를 100에서 1000 사이로 설정
+        'max_leaf_nodes': trial.suggest_int('max_leaf_nodes', 2, 500),  # 복원 및 조정: 최대 리프 노드 수를 100에서 1000 사이로 설정
         'min_impurity_decrease': trial.suggest_float('min_impurity_decrease', 0.0, 0.1),  # 조정: 불순도 감소량의 최소값 조정
         'bootstrap': trial.suggest_categorical('bootstrap', [True, False]),  # 조정: 부트스트랩 샘플링을 사용할지 여부
         'random_state': SEED
     }
     
-    skf = StratifiedKFold(5, shuffle=True, random_state=SEED)
+    skf = KFold(5, shuffle=True, random_state=SEED)
     cv_scores = np.empty(5)
     for idx, (train_idx, test_idx) in enumerate(skf.split(X, y)):
         X_train, X_val = X.iloc[train_idx], X.iloc[test_idx]
@@ -47,7 +47,7 @@ def objectiveRF(trial):
 
 study = optuna.create_study(direction="maximize")
 # study = optuna.create_study(direction='maximize', pruner=optuna.pruners.MedianPruner())
-study.optimize(objectiveRF, n_trials=5000, timeout=3000)
+study.optimize(objectiveRF, n_trials=20000, timeout=18000)
 best_params = study.best_trial.params
 
 print(best_params)
