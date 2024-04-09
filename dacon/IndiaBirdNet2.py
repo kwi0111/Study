@@ -30,7 +30,7 @@ path = 'C:\\_data\\dacon\\Bird\\'
 
 CFG = {
     'IMG_SIZE':224,
-    'EPOCHS':10,
+    'EPOCHS':1,
     'LEARNING_RATE':3e-5,
     'BATCH_SIZE':42,
     'SEED':42
@@ -48,7 +48,7 @@ def seed_everything(seed):
 seed_everything(CFG['SEED']) # Seed 고정
 
 df = pd.read_csv(path+'train.csv')
-train, val, _, _ = train_test_split(df, df['label'], test_size=0.3, stratify=df['label'], random_state=CFG['SEED'])
+train, val, _, _ = train_test_split(df, df['label'], test_size=0.25, stratify=df['label'], random_state=CFG['SEED'])
 
 le = preprocessing.LabelEncoder()
 train['label'] = le.fit_transform(train['label'])
@@ -62,24 +62,28 @@ class CustomDataset(Dataset):
 
     def __getitem__(self, index):
         img_path = self.img_path_list[index]
-        # 이미지 경로 수정 - 예시: 절대 경로 사용
-        img_path = os.path.join("C:\\_data\\dacon\\Bird\\train", img_path.split('/')[-1])
+        img_path = img_path.replace('./', '')  # './' 제거
+        img_path = os.path.join('C:/_data/dacon/Bird/', img_path)  # 절대 경로로 변경
         image = cv2.imread(img_path)
 
-        # 이미지 로딩 검증
         if image is None:
             raise FileNotFoundError(f"Cannot load image at {img_path}")
 
-        # 변환 적용
-        if self.transforms is not None:
-            image = self.transforms(image=image)['image']
+        if self.transforms:
+            augmented = self.transforms(image=image)
+            image = augmented['image']  # 이 부분에서 텐서로 변환됩니다.
 
+
+        # label_list가 None이 아닐 때만 레이블 처리
         if self.label_list is not None:
             label = self.label_list[index]
-            return image, label
         else:
-            return image
-        
+            # 레이블이 없는 경우 (예: 테스트 데이터셋) 임의의 값을 할당하거나, 레이블 관련 처리를 생략
+            label = -1  # 또는 label = None 등, 처리 방식에 따라 변경 가능
+
+        return image, torch.tensor(label, dtype=torch.long)
+
+
     def __len__(self):
         return len(self.img_path_list)
     
@@ -186,15 +190,15 @@ def inference(model, test_loader, device):
     model.eval()
     preds = []
     with torch.no_grad():
-        for imgs in tqdm(iter(test_loader)):
-            imgs = imgs.float().to(device)
-            
+        for batch in tqdm(iter(test_loader)):
+            imgs = batch[0].to(device)  # 첫 번째 요소가 이미지 데이터라고 가정
             pred = model(imgs)
-            
             preds += pred.argmax(1).detach().cpu().numpy().tolist()
-    
+
     preds = le.inverse_transform(preds)
     return preds
+
+
 
 preds = inference(infer_model, test_loader, device)
 

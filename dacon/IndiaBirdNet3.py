@@ -1,119 +1,303 @@
-import numpy as np
+import random
 import pandas as pd
+import numpy as np
 import os
+import re
+import glob
 import cv2
+
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
+from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
+import torch.nn as nn
+import torchvision.models as models
+
+
+import albumentations as A
+from albumentations.pytorch.transforms import ToTensorV2
+import torchvision.models as models
+
 from sklearn.model_selection import train_test_split
 from sklearn import preprocessing
 from sklearn.metrics import f1_score
-from efficientnet.keras import EfficientNetB0
-from keras.models import Sequential
-from keras.layers import Dense, GlobalAveragePooling2D
-from keras.preprocessing.image import ImageDataGenerator
+from sklearn.metrics import classification_report
+from tqdm import tqdm
 
-# 하이퍼파라미터 설정
-IMG_SIZE = 224
-BATCH_SIZE = 32
-SEED = 41
-EPOCHS = 30
+import warnings
+warnings.filterwarnings(action='ignore') 
+device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
-# 시드 설정
-np.random.seed(SEED)
+import torch
+print("CUDA Available:", torch.cuda.is_available())
+print("CUDA Version:", torch.version.cuda)
+print("CUDA Device Count:", torch.cuda.device_count())
+if torch.cuda.is_available():
+    print("CUDA Device Name:", torch.cuda.get_device_name(0))
 
-# 데이터 경로
-path = 'C:/_data/dacon/bird'
 
-# 데이터 불러오기
-df = pd.read_csv(os.path.join(path, 'train.csv'))
+path = 'C:\\_data\\dacon\\Bird\\'
 
-# 데이터 전처리
+CFG = {
+    'IMG_SIZE': 224,
+    'EPOCHS': 100,
+    'LEARNING_RATE': 0.0001,
+    'BATCH_SIZE': 64,
+    'SEED': 42,
+    'PATIENCE': 5,  # 얼리 스톱핑을 위한 인내심 설정
+}
+
+def train(model, optimizer, train_loader, val_loader, scheduler, device):
+    model.to(device)
+    criterion = nn.CrossEntropyLoss().to(device)
+    
+    best_score = 0
+    best_model = None
+    patience_counter = 0  # 얼리 스톱핑 카운터
+    
+    for epoch in range(1, CFG['EPOCHS']+1):
+        model.train()
+        train_loss = []
+        for imgs, labels in train_loader:
+            imgs = imgs.to(device)
+            labels = labels.to(device)
+            optimizer.zero_grad()  # 기존 코드에서 누락된 부분을 추가합니다.
+            output = model(imgs)
+            loss = criterion(output, labels)
+            loss.backward()
+            optimizer.step()
+            train_loss.append(loss.item())
+                    
+        _val_loss, _val_score = validation(model, criterion, val_loader, device)
+        _train_loss = np.mean(train_loss)
+        
+        print(f'Epoch [{epoch}], Train Loss: {_train_loss:.5f}, Val Loss: {_val_loss:.5f}, Val F1 Score: {_val_score:.5f}')
+       
+        if scheduler is not None:
+            scheduler.step(_val_score)
+            
+        # 성능이 개선되었는지 확인
+        if best_score < _val_score:
+            best_score = _val_score
+            best_model = model
+            patience_counter = 0  # 성능이 개선되었으므로 카운터를 리셋합니다.
+        else:
+            patience_counter += 1  # 성능이 개선되지 않았으므로 카운터를 증가시킵니다.
+        
+        # 얼리 스톱핑 조건 체크
+        if patience_counter > CFG['PATIENCE']:
+            print("Early stopping triggered.")
+            break
+    
+    return best_model
+def seed_everything(seed):
+    random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = True
+    torch.backends.cudnn.enabled = True
+    
+seed_everything(CFG['SEED']) # Seed 고정
+
+df = pd.read_csv(path+'train.csv')
+train, val, _, _ = train_test_split(df, df['label'], test_size=0.25, stratify=df['label'], random_state=CFG['SEED'])
+
 le = preprocessing.LabelEncoder()
-df['label'] = le.fit_transform(df['label'])
-train, val = train_test_split(df, test_size=0.3, stratify=df['label'], random_state=SEED)
+train['label'] = le.fit_transform(train['label'])
+val['label'] = le.transform(val['label'])
 
-# 데이터 제너레이터 생성
-train_datagen = ImageDataGenerator(
-    rescale=1./255,
-    rotation_range=20, # 이미지를 20도까지 회전
-    width_shift_range=0.2, # 이미지를 수평으로 20%까지 이동
-    height_shift_range=0.2, # 이미지를 수직으로 20%까지 이동
-    shear_range=0.2, # 시어 변환 적용
-    zoom_range=0.2, # 20%까지 확대/축소
-    horizontal_flip=True, # 수평으로 뒤집기
-    fill_mode='nearest' # 회전 또는 이동으로 인해 생기는 공백을 채우는 방식
-)
+class CustomDataset(Dataset):
+    def __init__(self, img_path_list, label_list, transforms=None):
+        self.img_path_list = img_path_list
+        self.label_list = label_list
+        self.transforms = transforms
 
-train_generator = train_datagen.flow_from_dataframe(
-    dataframe=train,
-    directory=path,
-    x_col='img_path',
-    y_col='label',
-    target_size=(IMG_SIZE, IMG_SIZE),
-    batch_size=BATCH_SIZE,
-    class_mode='raw',
-    subset='training',
-    seed=SEED
-)
+    def __getitem__(self, index):
+        img_path = self.img_path_list[index]
+        img_path = img_path.replace('./', '')  # './' 제거
+        img_path = os.path.join('C:/_data/dacon/Bird/', img_path)  # 절대 경로로 변경
+        image = cv2.imread(img_path)
 
-val_generator = train_datagen.flow_from_dataframe(
-    dataframe=val,
-    directory=path,
-    x_col='img_path',
-    y_col='label',
-    target_size=(IMG_SIZE, IMG_SIZE),
-    batch_size=BATCH_SIZE,
-    class_mode='raw',
-    subset='validation',
-    seed=SEED
-)
+        if image is None:
+            raise FileNotFoundError(f"Cannot load image at {img_path}")
 
-# 모델 정의
-from keras.models import Sequential
-from keras.layers import Dense, GlobalAveragePooling2D, Dropout, BatchNormalization
-from keras.regularizers import l2
-from efficientnet.keras import EfficientNetB0
+        if self.transforms:
+            augmented = self.transforms(image=image)
+            image = augmented['image']  # 이 부분에서 텐서로 변환됩니다.
 
-base_model = EfficientNetB0(include_top=False, weights='imagenet', input_shape=(IMG_SIZE, IMG_SIZE, 3))
 
-model = Sequential([
-    base_model,
-    GlobalAveragePooling2D(),
-    BatchNormalization(),  # 배치 정규화 레이어 추가
-    Dropout(0.2),  # 드롭아웃 레이어 추가, 50% 비율
-    Dense(256, activation='relu', kernel_regularizer=l2(0.01)),  # L2 정규화 추가
-    BatchNormalization(),  # 배치 정규화 레이어 추가
-    Dense(10, activation='softmax')  # 클래스 수에 맞게 조정
+        # label_list가 None이 아닐 때만 레이블 처리
+        if self.label_list is not None:
+            label = self.label_list[index]
+        else:
+            # 레이블이 없는 경우 (예: 테스트 데이터셋) 임의의 값을 할당하거나, 레이블 관련 처리를 생략
+            label = -1  # 또는 label = None 등, 처리 방식에 따라 변경 가능
+
+        return image, torch.tensor(label, dtype=torch.long)
+
+
+    def __len__(self):
+        return len(self.img_path_list)
+    
+
+train_transform = A.Compose([
+    A.Resize(CFG['IMG_SIZE'], CFG['IMG_SIZE']),
+    A.HorizontalFlip(p=0.2),  # 이미지를 수평으로 뒤집기
+    A.VerticalFlip(p=0.2),  # 추가: 이미지를 수직으로 뒤집기
+    A.RandomRotate90(p=0.3),  # 추가: 이미지를 90도 단위로 무작위 회전
+    A.Rotate(limit=10),  # 이미지 회전
+    A.GaussianBlur(p=0.05),  # 가우시안 블러 적용
+    A.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1, p=0.1),  # 추가: 색상 조정
+    A.OneOf([  # 추가: 이 중 하나의 변환을 적용
+        A.ElasticTransform(alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03),
+        A.GridDistortion(),
+        A.OpticalDistortion(distort_limit=2, shift_limit=0.5),
+    ], p=0.3),
+    A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), max_pixel_value=255.0),
+    ToTensorV2(),
 ])
 
-# 모델 컴파일
-model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+test_transform = A.Compose([
+                            A.Resize(CFG['IMG_SIZE'],CFG['IMG_SIZE']),
+                            A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), max_pixel_value=255.0, always_apply=False, p=1.0),
+                            ToTensorV2()
+                            ])
 
-# 모델 훈련
-history = model.fit(
-    train_generator,
-    steps_per_epoch=train_generator.samples // BATCH_SIZE,
-    epochs=EPOCHS,
-    validation_data=val_generator,
-    validation_steps=val_generator.samples // BATCH_SIZE
-)
+train_dataset = CustomDataset(train['img_path'].values, train['label'].values, train_transform)
+train_loader = DataLoader(train_dataset, batch_size = CFG['BATCH_SIZE'], shuffle=False, num_workers=0)
 
-# 예측 및 평가
-test_df = pd.read_csv(os.path.join(path, 'test.csv'))
-test_datagen = ImageDataGenerator(rescale=1./255)
-test_generator = test_datagen.flow_from_dataframe(
-    dataframe=test_df,
-    directory=path,
-    x_col='img_path',
-    y_col=None,
-    target_size=(IMG_SIZE, IMG_SIZE),
-    batch_size=BATCH_SIZE,
-    class_mode=None,
-    shuffle=False
-)
-preds = model.predict(test_generator)
-pred_labels = np.argmax(preds, axis=1)
-pred_labels = le.inverse_transform(pred_labels)
+val_dataset = CustomDataset(val['img_path'].values, val['label'].values, test_transform)
+val_loader = DataLoader(val_dataset, batch_size=CFG['BATCH_SIZE'], shuffle=False, num_workers=0)
 
-# 결과 저장
-submit = pd.read_csv(os.path.join(path, 'sample_submission.csv'))
-submit['label'] = pred_labels
-submit.to_csv(os.path.join(path, 'baseline_submit.csv'), index=False)
+# class BaseModel(nn.Module):
+#     def __init__(self, num_classes=len(le.classes_)):
+#         super(BaseModel, self).__init__()
+#         self.backbone = models.efficientnet_b1(pretrained=True)
+#         self.classifier = nn.Linear(1000, num_classes)
+        
+#     def forward(self, x):
+#         x = self.backbone(x)
+#         x = self.classifier(x)
+#         return x
+    
+def train(model, optimizer, train_loader, val_loader, scheduler, device):
+    model.to(device)
+    criterion = nn.CrossEntropyLoss().to(device)
+    
+    best_score = 0
+    best_model = None
+    
+    for epoch in range(1, CFG['EPOCHS']+1):
+        model.train()
+        train_loss = []
+        for imgs, labels in train_loader:
+            imgs = imgs.to(device)  # 이미지 데이터를 GPU로 이동
+            labels = labels.to(device)  # 레이블 데이터를 GPU로 이동
+
+            
+            output = model(imgs)
+            loss = criterion(output, labels)
+            
+            loss.backward()
+            optimizer.step()
+            
+            train_loss.append(loss.item())
+                    
+        _val_loss, _val_score = validation(model, criterion, val_loader, device)
+        _train_loss = np.mean(train_loss)
+        print(f'Epoch [{epoch}], Train Loss : [{_train_loss:.5f}] Val Loss : [{_val_loss:.5f}] Val F1 Score : [{_val_score:.5f}]')
+       
+        if scheduler is not None:
+            scheduler.step(_val_score)
+            
+        if best_score < _val_score:
+            best_score = _val_score
+            best_model = model
+    
+    return best_model
+def validation(model, criterion, val_loader, device):
+    model.eval()
+    val_loss = []
+    preds, true_labels = [], []
+
+    with torch.no_grad():
+        for imgs, labels in val_loader:
+            imgs = imgs.to(device)  # 이미지 데이터를 GPU로 이동
+            labels = labels.to(device)  # 레이블 데이터를 GPU로 이동
+            
+            pred = model(imgs)
+            
+            loss = criterion(pred, labels)
+            
+            preds += pred.argmax(1).detach().cpu().numpy().tolist()
+            true_labels += labels.detach().cpu().numpy().tolist()
+            
+            val_loss.append(loss.item())
+        
+        _val_loss = np.mean(val_loss)
+        _val_score = f1_score(true_labels, preds, average='macro')
+    
+    return _val_loss, _val_score
+
+
+class BaseModel(nn.Module):
+    def __init__(self, num_classes):
+        super(BaseModel, self).__init__()
+        # MobileNetV2를 backbone으로 사용 (pretrained)
+        self.backbone = models.mobilenet_v2(pretrained=True)
+        # MobileNetV2의 마지막 분류 레이어를 제거 (features만 사용)
+        self.features = self.backbone.features
+        
+        # 새로운 분류기
+        # MobileNetV2의 경우, 마지막 채널 수는 1280입니다.
+        self.classifier = nn.Sequential(
+            nn.Linear(1280, 512),  # MobileNetV2의 특징 벡터 크기에 맞춤
+            nn.ReLU(),
+            nn.BatchNorm1d(512),
+            nn.Dropout(0.3),
+            nn.Linear(512, num_classes)
+        )
+        
+    def forward(self, x):
+        x = self.features(x)
+        x = x.mean([2, 3])  # Global Average Pooling
+        x = self.classifier(x)
+        return x
+
+# 사용 예제
+model = BaseModel(num_classes=len(le.classes_)).to(device)
+model.eval()
+
+optimizer = torch.optim.Adam(params = model.parameters(), lr = CFG["LEARNING_RATE"])
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=5, threshold_mode='abs', min_lr=1e-8, verbose=True)
+
+
+infer_model = train(model, optimizer, train_loader, val_loader, scheduler, device)
+
+test = pd.read_csv(path + 'test.csv')
+test_dataset = CustomDataset(test['img_path'].values, None, test_transform)
+test_loader = DataLoader(test_dataset, batch_size=CFG['BATCH_SIZE'], shuffle=False, num_workers=0)
+
+def inference(model, test_loader, device):
+    model.eval()
+    preds = []
+    with torch.no_grad():
+        for batch in tqdm(iter(test_loader)):
+            imgs = batch[0].to(device)  # 첫 번째 요소가 이미지 데이터라고 가정
+            pred = model(imgs)
+            preds += pred.argmax(1).detach().cpu().numpy().tolist()
+
+    preds = le.inverse_transform(preds)
+    return preds
+
+
+
+preds = inference(infer_model, test_loader, device)
+
+submit = pd.read_csv(path + 'sample_submission.csv')
+submit['label'] = preds
+submit.to_csv(path + 'submit.csv', index=False)    
