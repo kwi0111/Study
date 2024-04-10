@@ -41,9 +41,9 @@ path = 'C:\\_data\\dacon\\Bird\\'
 
 CFG = {
     'IMG_SIZE': 224,
-    'EPOCHS': 100,
+    'EPOCHS': 300,
     'LEARNING_RATE': 0.0001,
-    'BATCH_SIZE': 64,
+    'BATCH_SIZE': 32,
     'SEED': 42,
     'PATIENCE': 5,  # 얼리 스톱핑을 위한 인내심 설정
 }
@@ -104,7 +104,7 @@ def seed_everything(seed):
 seed_everything(CFG['SEED']) # Seed 고정
 
 df = pd.read_csv(path+'train.csv')
-train, val, _, _ = train_test_split(df, df['label'], test_size=0.25, stratify=df['label'], random_state=CFG['SEED'])
+train, val, _, _ = train_test_split(df, df['label'], test_size=0.2, stratify=df['label'], random_state=CFG['SEED'])
 
 le = preprocessing.LabelEncoder()
 train['label'] = le.fit_transform(train['label'])
@@ -148,10 +148,10 @@ train_transform = A.Compose([
     A.Resize(CFG['IMG_SIZE'], CFG['IMG_SIZE']),
     A.HorizontalFlip(p=0.2),  # 이미지를 수평으로 뒤집기
     A.VerticalFlip(p=0.2),  # 추가: 이미지를 수직으로 뒤집기
-    A.RandomRotate90(p=0.3),  # 추가: 이미지를 90도 단위로 무작위 회전
+    # A.RandomRotate90(p=0.3),  # 추가: 이미지를 90도 단위로 무작위 회전
     A.Rotate(limit=10),  # 이미지 회전
     A.GaussianBlur(p=0.05),  # 가우시안 블러 적용
-    A.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1, p=0.1),  # 추가: 색상 조정
+    A.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2, p=0.2),  # 추가: 색상 조정
     A.OneOf([  # 추가: 이 중 하나의 변환을 적용
         A.ElasticTransform(alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03),
         A.GridDistortion(),
@@ -173,16 +173,6 @@ train_loader = DataLoader(train_dataset, batch_size = CFG['BATCH_SIZE'], shuffle
 val_dataset = CustomDataset(val['img_path'].values, val['label'].values, test_transform)
 val_loader = DataLoader(val_dataset, batch_size=CFG['BATCH_SIZE'], shuffle=False, num_workers=0)
 
-# class BaseModel(nn.Module):
-#     def __init__(self, num_classes=len(le.classes_)):
-#         super(BaseModel, self).__init__()
-#         self.backbone = models.efficientnet_b1(pretrained=True)
-#         self.classifier = nn.Linear(1000, num_classes)
-        
-#     def forward(self, x):
-#         x = self.backbone(x)
-#         x = self.classifier(x)
-#         return x
     
 def train(model, optimizer, train_loader, val_loader, scheduler, device):
     model.to(device)
@@ -247,15 +237,15 @@ def validation(model, criterion, val_loader, device):
 class BaseModel(nn.Module):
     def __init__(self, num_classes):
         super(BaseModel, self).__init__()
-        # MobileNetV2를 backbone으로 사용 (pretrained)
-        self.backbone = models.mobilenet_v2(pretrained=True)
-        # MobileNetV2의 마지막 분류 레이어를 제거 (features만 사용)
+        # EfficientNet B1을 backbone으로 사용 (pretrained)
+        self.backbone = models.efficientnet_b1(pretrained=True)
+        # EfficientNet B1의 마지막 분류 레이어를 제거 (features만 사용)
         self.features = self.backbone.features
         
         # 새로운 분류기
-        # MobileNetV2의 경우, 마지막 채널 수는 1280입니다.
+        # EfficientNet B1의 경우, 마지막 채널 수는 1280입니다.
         self.classifier = nn.Sequential(
-            nn.Linear(1280, 512),  # MobileNetV2의 특징 벡터 크기에 맞춤
+            nn.Linear(1280, 512),  # EfficientNet B1의 특징 벡터 크기에 맞춤
             nn.ReLU(),
             nn.BatchNorm1d(512),
             nn.Dropout(0.3),
@@ -264,9 +254,11 @@ class BaseModel(nn.Module):
         
     def forward(self, x):
         x = self.features(x)
+        # EfficientNet B1에서는 Global Average Pooling이 필요합니다.
         x = x.mean([2, 3])  # Global Average Pooling
         x = self.classifier(x)
         return x
+
 
 # 사용 예제
 model = BaseModel(num_classes=len(le.classes_)).to(device)
@@ -274,6 +266,7 @@ model.eval()
 
 optimizer = torch.optim.Adam(params = model.parameters(), lr = CFG["LEARNING_RATE"])
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=5, threshold_mode='abs', min_lr=1e-8, verbose=True)
+# scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=CFG['EPOCHS'], eta_min=1e-6)
 
 
 infer_model = train(model, optimizer, train_loader, val_loader, scheduler, device)
@@ -294,10 +287,58 @@ def inference(model, test_loader, device):
     preds = le.inverse_transform(preds)
     return preds
 
+from sklearn.model_selection import KFold
+
+def run_k_fold(N_FOLDS=5):
+    results = []
+
+    # KFold 객체 생성
+    kfold = KFold(n_splits=N_FOLDS, shuffle=True, random_state=CFG['SEED'])
+
+    for fold, (train_ids, val_ids) in enumerate(kfold.split(df)):
+        print(f'FOLD {fold}')
+        print('--------------------------------')
+
+        # 데이터셋 분할
+        train_subsampler = torch.utils.data.SubsetRandomSampler(train_ids)
+        val_subsampler = torch.utils.data.SubsetRandomSampler(val_ids)
+
+        # DataLoader 업데이트
+        train_loader = DataLoader(train_dataset, batch_size=CFG['BATCH_SIZE'], sampler=train_subsampler)
+        val_loader = DataLoader(val_dataset, batch_size=CFG['BATCH_SIZE'], sampler=val_subsampler)
+
+        # 모델 초기화
+        model = BaseModel(num_classes=len(le.classes_)).to(device)
+        
+        # 옵티마이저와 스케줄러 초기화
+        optimizer = torch.optim.Adam(model.parameters(), lr=CFG['LEARNING_RATE'])
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=CFG['EPOCHS'], eta_min=1e-6)
+
+        # 모델 훈련
+        trained_model = train(model, optimizer, train_loader, val_loader, scheduler, device)
+        
+        # 검증
+        val_loss, val_score = validation(trained_model, nn.CrossEntropyLoss().to(device), val_loader, device)
+        print(f'Validation Loss: {val_loss}, Validation F1 Score: {val_score}')
+        results.append((val_loss, val_score))
+
+    return results
+
+# K-Fold 교차 검증 실행
+kfold_results = run_k_fold(N_FOLDS=5)
+
+# 결과 요약
+for fold, (loss, score) in enumerate(kfold_results):
+    print(f'Fold {fold}: Loss = {loss}, F1 Score = {score}')
 
 
 preds = inference(infer_model, test_loader, device)
 
+from datetime import datetime
+current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
+filename = f'submit_{current_time}.csv'
+
+# 제출 파일 저장
 submit = pd.read_csv(path + 'sample_submission.csv')
 submit['label'] = preds
-submit.to_csv(path + 'submit.csv', index=False)    
+submit.to_csv(path + filename, index=False)   
