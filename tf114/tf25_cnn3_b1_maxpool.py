@@ -19,8 +19,8 @@ x = tf.compat.v1.placeholder(tf.float32, [None,28,28,1])    # input_shape
 y = tf.compat.v1.placeholder(tf.float32, [None,10]) 
 
 # Layer1
-w1 = tf.compat.v1.get_variable('w1', shape=[2,2,1,128])  # 커널사이즈 (2,2) / 컬러(채널 1개) / 128개 필터(아웃풋) /
-b1 = tf.compat.v1.Variable(tf.zeros([128]), name='b1')   # 필터의 갯수와 동일하다.
+w1 = tf.compat.v1.get_variable('w1', shape=[2,2,1,128])  # 커널사이즈 (2,2) / 컬러(채널 1개, 흑백) / 128개 필터(아웃풋) /
+b1 = tf.compat.v1.Variable(tf.zeros([128]), name='b1')   # bias는 필터의 갯수와 동일하다.
 
 L1 = tf.nn.conv2d(x, w1, strides=[1,1,1,1], padding='VALID')    # 필터가 이미지를 한 픽셀씩 이동하며 적용
 L1 = L1 + b1    # L1 += b1

@@ -25,3 +25,20 @@ print(sess.run(hello))
 2.9.0       disable             가능 @@@@
 2.9.0       enable  (디폴트)     에러
 '''
+
+'''
+텐서 1은 '그래프연산' 모드
+텐서 2은 '즉시실행' 모드
+
+tf.compat.v1.enable_eager_execution() # 즉시 실행모드 켜
+                -> 텐서2의 디폴트
+
+tf.compat.v1.disnable_eager_execution() # 즉시 실행모드 꺼
+                -> 그래프 연산모드로 돌아간다
+                -> 텐서1 코드를 쓸수 있다.
+
+tf.executing_eagerly() # True면 즉시 실행모드, 텐서2 코드만 써야한다.
+                        # False면 그래프 연산모드 -> 텐서1 코드를 쓸 수 있다.
+
+
+'''
