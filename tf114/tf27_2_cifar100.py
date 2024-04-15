@@ -25,9 +25,9 @@ x = tf.compat.v1.placeholder(tf.float32, shape = [None, 32, 32, 3])
 y = tf.compat.v1.placeholder(tf.float32, shape = [None, 100])
 
 # Layer1
-w1 = tf.compat.v1.get_variable('w1', shape = [2, 2, 3, 32])
+w1 = tf.compat.v1.get_variable('w1', shape = [2, 2, 3, 128])
                                       # 커널사이즈, 컬러(채널), 필터(아웃풋)
-b1 = tf.compat.v1.Variable(tf.compat.v1.zeros([32], name = 'b1'))
+b1 = tf.compat.v1.Variable(tf.compat.v1.zeros([128], name = 'b1'))
 
 L1 = tf.nn.conv2d(x, w1, strides=[1,1,1,1], padding='VALID') 
 L1 += b1    
@@ -35,7 +35,7 @@ L1 = tf.nn.relu(L1)
 L1_maxpool = tf.nn.max_pool2d(L1, ksize=[1,2,2,1], strides=[1,2,2,1], padding='VALID')  
 
 # Layer2
-w2 = tf.compat.v1.get_variable('w2', shape = [3, 3, 32, 16])
+w2 = tf.compat.v1.get_variable('w2', shape = [3, 3, 128, 16])
 b2 = tf.compat.v1.Variable(tf.compat.v1.zeros([16], name = 'b2'))
 
 L2 = tf.nn.conv2d(L1_maxpool, w2, strides=[1,1,1,1], padding='SAME') 
@@ -79,10 +79,10 @@ train = tf.compat.v1.train.AdamOptimizer(learning_rate=1e-4).minimize(loss)
 sess = tf.compat.v1.Session()
 sess.run(tf.compat.v1.global_variables_initializer())
 
-batch_size = 100
+batch_size = 500
 total_batch = int(len(x_train) / batch_size)
 
-epochs = 301
+epochs = 101
 for step in range(epochs):
     avg_loss = 0    # loss == cost
     for i in range(total_batch):
@@ -97,7 +97,7 @@ for step in range(epochs):
         avg_loss += loss_val / total_batch
         
         
-    if step %10 == 0:
+    if step %1 == 0:
         print(step, "loss : ", avg_loss)
 
 
@@ -110,5 +110,5 @@ y_data = np.argmax(y_test, axis=1)
 
 acc = accuracy_score(y_data,pred)
 print("acc : ", acc)
-
+# acc :  0.2822
 sess.close()
