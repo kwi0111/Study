@@ -41,9 +41,9 @@ path = 'C:\\_data\\dacon\\Bird\\'
 
 CFG = {
     'IMG_SIZE': 224,
-    'EPOCHS': 300,
+    'EPOCHS': 10,
     'LEARNING_RATE': 0.0001,
-    'BATCH_SIZE': 32,
+    'BATCH_SIZE': 44,
     'SEED': 42,
     'PATIENCE': 5,  # 얼리 스톱핑을 위한 인내심 설정
 }

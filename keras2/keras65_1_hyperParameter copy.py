@@ -54,11 +54,11 @@ keras_model = KerasClassifier(build_fn=bulid_model, verbose=1) # scikit learn ->
 
 # model = RandomizedSearchCV(bulid_model, hyperparameters, cv=2, n_iter=10, n_jobs=-1, verbose=1)
 # 랜덤서치가 못알아먹는 모델, 파라미터 사용으로 에러 -> 케라스 모델을 사이킷런 머신러닝 모델로 바꿔줘야함.
-model = RandomizedSearchCV(keras_model, hyperparameters, cv=2, n_iter=1, n_jobs=-1, verbose=1)
+model = RandomizedSearchCV(keras_model, hyperparameters, cv=2, n_iter=5, n_jobs=16, verbose=1)
 
 
 start_time = time.time()
-model.fit(x_train, y_train, epochs=3)
+model.fit(x_train, y_train, epochs=10)
 end_time = time.time()
 
 print('걸린 시간 : ', round(end_time-start_time, 2))
@@ -81,3 +81,14 @@ print('acc_score : ', accuracy_score(y_test, y_predict))
 # model.score_ :  0.8921999931335449
 # 313/313 [==============================] - 0s 519us/step
 # acc_score :  0.8922
+
+# 걸린 시간 :  76.7
+# model.best_params_ :  {'optimizer': 'adam', 'node3': 16, 'node2': 16, 'node1': 64, 'drop': 0.2, 'batch_size': 200, 'activation': 'relu'}
+# model.best_estimator_ :  <keras.wrappers.scikit_learn.KerasClassifier object at 0x000001E53283F400>
+# model.best_score_ :  0.948850005865097
+# 50/50 [==============================] - 0s 723us/step - loss: 0.1507 - acc: 0.9622
+# model.score_ :  0.9621999859809875
+# 313/313 [==============================] - 0s 484us/step
+# acc_score :  0.9622
+
+

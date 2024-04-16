@@ -42,8 +42,8 @@ path = 'C:\\_data\\dacon\\Bird\\'
 CFG = {
     'IMG_SIZE': 224,
     'EPOCHS': 100,
-    'LEARNING_RATE': 0.0001,
-    'BATCH_SIZE': 42,
+    'LEARNING_RATE': 0.0005,
+    'BATCH_SIZE': 32,
     'SEED': 42,
     'PATIENCE': 5,  # 얼리 스톱핑을 위한 인내심 설정
 }
@@ -168,7 +168,7 @@ test_transform = A.Compose([
                             ])
 
 train_dataset = CustomDataset(train['img_path'].values, train['label'].values, train_transform)
-train_loader = DataLoader(train_dataset, batch_size = CFG['BATCH_SIZE'], shuffle=False, num_workers=0)
+train_loader = DataLoader(train_dataset, batch_size=CFG['BATCH_SIZE'], shuffle=True, num_workers=4)
 
 val_dataset = CustomDataset(val['img_path'].values, val['label'].values, test_transform)
 val_loader = DataLoader(val_dataset, batch_size=CFG['BATCH_SIZE'], shuffle=False, num_workers=0)
@@ -246,24 +246,23 @@ def validation(model, criterion, val_loader, device):
 class BaseModel(nn.Module):
     def __init__(self, num_classes):
         super(BaseModel, self).__init__()
-        # EfficientNet B0을 backbone으로 사용
-        self.backbone = models.efficientnet_b1(pretrained=True)
-        # EfficientNet B0의 분류기를 제거 (특징 추출기만 사용)
+        # EfficientNet B0를 backbone으로 사용
+        self.backbone = models.efficientnet_b0(pretrained=True)
         self.features = self.backbone.features
-        
-        # 추가할 배치 정규화 레이어와 분류기
+
+        # 배치 정규화 레이어와 분류기
         self.batchnorm = nn.BatchNorm1d(1280)  # EfficientNet B0의 특징 벡터 크기에 맞춤
         self.classifier = nn.Sequential(
             nn.Linear(1280, 512),  # 1280은 EfficientNet B0의 특징 벡터 크기
             nn.ReLU(),
-            nn.BatchNorm1d(512),  # 추가된 배치 정규화 레이어
-            nn.Dropout(0.4),
+            nn.BatchNorm1d(512),
+            nn.Dropout(0.3),
             nn.Linear(512, num_classes)
         )
         
     def forward(self, x):
         x = self.features(x)
-        x = nn.functional.adaptive_avg_pool2d(x, 1).reshape(x.shape[0], -1)  # Global Average Pooling
+        x = F.adaptive_avg_pool2d(x, 1).reshape(x.shape[0], -1)  # Global Average Pooling
         x = self.batchnorm(x)
         x = self.classifier(x)
         return x
@@ -275,7 +274,7 @@ model.eval()
 
 
 optimizer = torch.optim.Adam(params = model.parameters(), lr = CFG["LEARNING_RATE"])
-scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=5, threshold_mode='abs', min_lr=1e-8, verbose=True)
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=5, threshold_mode='abs', min_lr=1e-8, verbose=1)
 
 # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=CFG['EPOCHS'], eta_min=0)
 
