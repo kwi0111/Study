@@ -1,13 +1,15 @@
+# california // rmse, r2
+# 09 dacon 따릉이
+# 10 kaggle 비만도
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-from sklearn.datasets import load_breast_cancer
+from sklearn.datasets import fetch_california_housing
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-
+from sklearn.metrics import mean_squared_error, r2_score
 
 # GPU 를 되는지 안되는지 확인
 USE_CUDA = torch.cuda.is_available()
@@ -16,13 +18,13 @@ print('torch : ' , torch.__version__ , '사용 DEVICE : ', DEVICE)
 
 
 #1. 데이터
-dataset = load_breast_cancer()
+dataset = fetch_california_housing()
 x = dataset.data
 y = dataset.target
 print(x.shape, y.shape)
+# (442, 10) (442,)
 
-
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42, stratify=y, shuffle=True)
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42, shuffle=True)
 
 scaler = StandardScaler()
 x_train = scaler.fit_transform(x_train)
@@ -43,18 +45,27 @@ print(x_test.shape, y_test.shape)
 # model.add(Dense(1,input_dim = 1))
 # model = nn.Linear(1,1).to(DEVICE) # 인풋 , 아웃풋  # y = xw + b
 model = nn.Sequential(
-    nn.Linear(30, 64),
-    nn.Linear(64, 32),
+    nn.Linear(8, 256),
+    nn.BatchNorm1d(256),
     nn.ReLU(),
-    nn.Linear(32, 16),
-    nn.Linear(16, 7),
-    nn.Linear(7, 1),
-    nn.Sigmoid(),
+    nn.Dropout(0.2),
+    nn.Linear(256, 128),
+    nn.BatchNorm1d(128),
+    nn.ReLU(),
+    nn.Dropout(0.2),
+    nn.Linear(128, 64),
+    nn.BatchNorm1d(64),
+    nn.ReLU(),
+    nn.Dropout(0.2),
+    nn.Linear(64, 32),
+    nn.BatchNorm1d(32),
+    nn.ReLU(),
+    nn.Linear(32, 1)
 ).to(DEVICE)
 
 #3 컴파일
-criterion = nn.BCELoss()            
-optimizer = optim.Adam(model.parameters() , lr=0.001 )  
+criterion = nn.MSELoss()            
+optimizer = optim.Adam(model.parameters() , lr=0.0005 )  
 
 
 # model.fit(x,y,epochs = 100 , batch_size = 1)
@@ -78,7 +89,7 @@ def train(model , criterion , optimizer, x, y):
     optimizer.step()        # 가중치 수정(w 갱신)       -> 역전파 끝
     return loss.item()      # item을 쓰는 이유는 numpy 데이터로 뽑기위해서 똑같이 tensor 데이터는 맞음
     
-epochs = 2000
+epochs = 5000
 for epoch in range(1, epochs + 1) :
     loss = train(model, criterion, optimizer, x_train, y_train)
     print('epoch : {} , loss:{}'.format(epoch,loss))    # verbose
@@ -101,14 +112,19 @@ print('최종 loss : ', loss2)
 # y_predict = model(x_test)
 # 위의 결과 : device='cuda:0', grad_fn=<SigmoidBackward0>) 
 
-y_predict = np.round(model(x_test).cpu().detach().numpy())
+y_predict = model(x_test).cpu().detach().numpy()
 print(y_predict)
 # print(y_test) 
 # y_test 결과 : device='cuda:0'
-score = accuracy_score(y_test.cpu().numpy(), y_predict)
+mse = mean_squared_error(y_test.cpu().numpy(), y_predict)
+rmse = np.sqrt(mse)
+r2 = r2_score(y_test.cpu().numpy(), y_predict)
 
-print('Accuracy: {:.4f}'.format(score))
+print('Root Mean Squared Error (RMSE) : {:.4f}'.format(rmse))
+print('R2 Score : {:.4f}'.format(r2))
 
+# Root Mean Squared Error (RMSE) : 0.4857
+# R2 Score : 0.8200
 
 
 
