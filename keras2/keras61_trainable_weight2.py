@@ -35,3 +35,4 @@ model.fit(x,y,batch_size=1, epochs=500, verbose=0)
 y_pred = model.predict(x)
 print(y_pred)
 
+

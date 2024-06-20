@@ -46,3 +46,7 @@ model.summary()
 # Non-trainable params: 17 // 훈련 자체를 안시킨다.
 
 
+
+
+
+

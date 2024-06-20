@@ -29,10 +29,3 @@ model.summary()
 #2. input_shape 내가 하고싶은걸로해.
 
 
-
-
-
-
-
-
-

@@ -28,24 +28,3 @@ model.add(Dense(10, activation='softmax'))
 model.summary()
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
